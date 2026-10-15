@@ -1,0 +1,55 @@
+<!--
+  WorkSpace daily brief, 09:00.
+  Registered by _night\register.cmd -> register.mjs (schtasks /create /xml).
+  NOTE: schtasks only accepts UTF-16 XML, so this file is kept declaration-free
+  and UTF-8-readable; register.mjs converts it and injects the launcher path.
+  Action goes through launch-hidden.vbs so node runs without a console window
+  (the window you should see is the brief popup itself, nothing else).
+  Hard limit PT20M: the popup auto-closes after 15 min of no interaction;
+  this limit only guards a wedged window.
+-->
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>WorkSpace daily brief: pop the previous-day summary + the [待审] review window. Deterministic, no model involved. See D:\WorkSpace\_night\README.md</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-10-15T09:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT20M</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>wscript.exe</Command>
+      <Arguments>"D:\WorkSpace\_night\launch-hidden.vbs" "D:\WorkSpace\_night\brief.mjs" "--show"</Arguments>
+    </Exec>
+  </Actions>
+</Task>

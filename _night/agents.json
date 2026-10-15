@@ -1,0 +1,26 @@
+{
+  "default": "zcode",
+  "_说明": "夜跑/早检用哪个 agent CLI。改 default 即可切换；命令怎么写全在 argv 里（{bin} {node} {prompt} {root} {extra}），不用改代码。",
+  "agents": {
+    "zcode": {
+      "label": "无头 ZCode CLI",
+      "bin": ["%ZCODE_CLI%", "D:\\Zcode\\resources\\glm\\zcode.cjs"],
+      "scan": ["D:\\Zcode\\resources\\*\\zcode.cjs"],
+      "argv": ["{node}", "{bin}", "-p", "{prompt}", "--cwd", "{root}", "--mode", "yolo"],
+      "env": { "ZCODE_BUILTIN_PROVIDER_CONFIG_FILE": "@zcode-provider" }
+    },
+    "codex": {
+      "label": "Codex CLI（codex exec；内网模型用 extra 里的 --profile / -c / -m 指定）",
+      "bin": ["%CODEX_CLI%", "%LOCALAPPDATA%\\OpenAI\\Codex\\bin\\*\\codex.exe"],
+      "argv": [
+        "{bin}", "exec", "{extra}", "{prompt}",
+        "--cd", "{root}",
+        "--skip-git-repo-check",
+        "--dangerously-bypass-approvals-and-sandbox",
+        "--color", "never"
+      ],
+      "env": {},
+      "extra": []
+    }
+  }
+}

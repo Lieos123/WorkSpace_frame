@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--
+  夜跑看板模板（由 _night\board.mjs 填充，勿手改生成物 index.html）
+
+  改文案：直接改下面 HTML 里的汉字。
+  不要动 {{占位符}} 的名字，也不要删任何一个——少了占位符 board.mjs 会直接报错。
+  全部占位符（11 个）：
+    generatedAt 生成时间        dateHuman  这一页的日期（含星期）
+    statusBar   顶部状态灯      pending    等你点头的条目（待审）
+    tonight     今晚要跑的条目（待跑）      queues  两级清单
+    day         今日推进（一行一项目）      history 夜跑历史
+    projects    项目一览        needsFix   需要补齐（没有就一行"没有"）
+    links       快捷链接
+
+  视觉约定：顶栏是「夜色」，正文是白天的纸面；状态用颜色 + 胶囊标签两重表达。
+  排版原则：一屏看完——每行只放"标题 + 来源"，长说明进 title 提示（鼠标悬停）；
+  段落、日志摘录这类"读文"的东西留给前日简报，不往看板上堆。
+  分区片段（sections.mjs）与前日简报共用，它的 CSS 在简报模板里，这里只管看板页面自己的样式。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夜跑看板 · WorkSpace</title>
+<style>
+  :root{
+    --night:#141b2b;            /* 顶栏底色：夜色，刻意不用纯黑 */
+    --paper:#f2f4f7;            /* 页面底 */
+    --card:#ffffff;
+    --ink:#18202d;
+    --ink-2:#4b5667;
+    --ink-3:#8590a0;
+    --rule:#e3e7ee;
+    --rule-2:#eef1f5;
+    --accent:#2453b8;
+    --shadow:0 1px 2px rgba(24,32,45,.05);
+    /* 状态：每种一组「字色 + 浅底」，列表里做成胶囊 */
+    --go:#17784f;    --go-bg:#e4f3ea;
+    --wait:#8c5a06;  --wait-bg:#fbf0d6;
+    --half:#b3261e;  --half-bg:#fbe6e4;
+    --hold:#6638a6;  --hold-bg:#eee7f8;
+    --done:#2c5d9c;  --done-bg:#e5edf8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:14px/1.6 "Microsoft YaHei UI","PingFang SC","Segoe UI",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 18px 48px}
+
+  /* ---- 顶栏：夜色 + 衬线标题 + 状态灯 ---- */
+  .mast{background:var(--night);color:#e6eaf2;padding:26px 0 22px}
+  .mast .wrap{padding:0 18px}
+  .mast-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .mast h1{margin:0;font:600 32px/1.2 "Songti SC","Noto Serif SC","Source Han Serif SC",SimSun,serif;
+           letter-spacing:.04em;color:#f5f7fb}
+  .date{font-size:15px;color:#aeb8c8;font-variant-numeric:tabular-nums}
+  .mast .meta{margin-top:6px;color:#7d8799;font-size:12px}
+  .mast .chips{margin-top:16px}
+  .mast .chip{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#d5dbe6}
+  .mast .chip .d{background:#7d8799}
+  .mast .chip.go .d{background:#6ee0a4}
+  .mast .chip.wait .d{background:#f5c063}
+  .mast .chip.half .d{background:#ff8a80}
+  .mast .chip.hold .d{background:#c6aaff}
+  .mast .chip.done .d{background:#9cc3ff}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--rule);
+        border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--ink-2)}
+  .chip .d{width:6px;height:6px;border-radius:50%;background:#9aa2ad;flex:0 0 auto}
+
+  /* ---- 正文分区 ---- */
+  section{margin-bottom:30px}
+  h2{display:flex;align-items:center;gap:12px;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--ink-2)}
+  h2::after{content:"";flex:1 1 auto;height:1px;background:var(--rule)}
+  h2 .n{color:var(--ink-3);font-weight:400;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px 12px;
+        box-shadow:var(--shadow)}
+  section > .card + .card{margin-top:12px}
+  /* 需要处理的两张卡：左侧色条直接标出它的状态（待审＝琥珀，待跑＝绿） */
+  .rail-wait{box-shadow:inset 3px 0 0 var(--wait),var(--shadow)}
+  .rail-go{box-shadow:inset 3px 0 0 var(--go),var(--shadow)}
+  .card-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .card-h b{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .card-h .src{margin-left:auto}
+
+  .muted{color:var(--ink-3)} .small{font-size:12px} .num{font-variant-numeric:tabular-nums}
+  .ok{color:var(--go)} .warn{color:var(--half)}
+
+  /* 清单条目：一行 = 状态胶囊 + 标题 + 来源；说明在 title 里 */
+  ul.items{list-style:none;margin:8px 0 0;padding:0}
+  ul.items li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rule-2)}
+  ul.items li:first-child{border-top:0}
+  ul.items li:has(> .st) > .dot{display:none}
+  .dot{width:7px;height:7px;border-radius:50%;background:#9aa2ad;flex:0 0 auto}
+  .dot.go{background:var(--go)} .dot.wait{background:var(--wait)}
+  .dot.half{background:var(--half)} .dot.hold{background:var(--hold)} .dot.done{background:var(--done)}
+  .st{flex:0 0 auto;padding:1px 9px;border-radius:999px;font-size:12px;line-height:1.6;
+      color:var(--ink-2);background:var(--rule-2)}
+  .dot.go + .st{color:var(--go);background:var(--go-bg)}
+  .dot.wait + .st{color:var(--wait);background:var(--wait-bg)}
+  .dot.half + .st{color:var(--half);background:var(--half-bg)}
+  .dot.hold + .st{color:var(--hold);background:var(--hold-bg)}
+  .dot.done + .st{color:var(--done);background:var(--done-bg)}
+  .ti{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+  .src{flex:0 0 auto;max-width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+       color:var(--ink-3);font-size:11.5px;font-variant-numeric:tabular-nums}
+
+  /* 表格：项目一览 / 今日推进 / 夜跑历史 */
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--rule);
+        border-radius:12px;overflow:hidden;box-shadow:var(--shadow);table-layout:fixed}
+  th,td{text-align:left;padding:10px 14px;font-size:13.5px;vertical-align:top;
+        border-bottom:1px solid var(--rule-2);overflow-wrap:anywhere}
+  tr:last-child td{border-bottom:0}
+  th{background:#fbfcfd;color:var(--ink-3);font-weight:500;font-size:12px;white-space:nowrap}
+  td b{font-weight:600;color:var(--ink)}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  code{background:#edf0f4;border-radius:4px;padding:1px 5px;font:12px Consolas,"Cascadia Mono",monospace}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:12.5px;
+         display:flex;flex-wrap:wrap;gap:8px 20px}
+
+  /* 窄屏：单列；表格保留列宽，整体横向滚动，不挤成一团 */
+  @media(max-width:640px){
+    .wrap{padding-left:14px;padding-right:14px}
+    .mast .wrap{padding:0 14px}
+    .mast h1{font-size:26px}
+    .chips{gap:6px}
+    section{overflow-x:auto}
+    table{min-width:560px}
+    th,td{padding:8px 10px;font-size:13px}
+    td.n{white-space:normal}   /* 窄屏下数字串允许换行，免得撑破列宽叠到隔壁 */
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="mast-top">
+      <h1>夜跑看板</h1>
+      <div class="date">{{dateHuman}}</div>
+    </div>
+    <div class="meta">生成于 {{generatedAt}}</div>
+    {{statusBar}}
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>需要你处理</h2>
+    <div class="grid">
+      <div class="card rail-wait">
+        <div class="card-h"><b>等你点头</b></div>
+        {{pending}}
+      </div>
+      <div class="card rail-go">
+        <div class="card-h"><b>今晚要跑</b></div>
+        {{tonight}}
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>两级清单</h2>
+    {{queues}}
+  </section>
+
+  <section>
+    <h2>项目一览</h2>
+    {{projects}}
+  </section>
+
+  <section>
+    <h2>今日推进</h2>
+    {{day}}
+  </section>
+
+  <section>
+    <h2>夜跑历史 <span class="n">最近 7 次</span></h2>
+    {{history}}
+  </section>
+
+  <section>
+    <h2>需要补齐</h2>
+    {{needsFix}}
+  </section>
+
+  <footer>
+    {{links}}
+    <span>数据源 <code>node ws.mjs status --json</code></span>
+    <span>刷新 <code>node ws.mjs board</code></span>
+    <span>清单格式见 <code>CONVENTIONS.md</code> 第 5 节</span>
+    <span>机制见 <code>_night\README.md</code></span>
+  </footer>
+</div>
+</body>
+</html>

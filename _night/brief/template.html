@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<!--
+  前日简报模板（由 _night\brief.mjs 填充；latest.html 是生成物，勿手改）
+
+  改文案：直接改下面 HTML 里的汉字。
+  不要动 {{占位符}} 的名字，也不要删任何一个——少了占位符 brief.mjs 会直接报错。
+  全部占位符（12 个）：
+    dateHuman   这一期是哪天（含星期）   generatedAt 生成时间
+    headline    顶部自动要点            notes       人话摘要槽（无则给提示）
+    actionsBlock 需要你处理（[待审] / [待跑] 两栏）
+    nightBlock  昨晚夜跑                dayBlock    昨天白天做了什么
+    morningBlock 今早收口               boardBlock  夜跑看板（两级清单/项目一览/夜跑历史/需要补齐）
+    linksBlock  快捷入口
+
+  这个文件会被 WinForms 的 IE 内核渲染，所以**只用保守 CSS**（无 CSS 变量、无 flex/grid）。
+  排版原则同看板：一行一条、长文截断，别让人在窗口里读长文。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>前日总结 · WorkSpace</title>
+<style>
+  body{font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif;font-size:13.5px;line-height:1.6;
+       color:#1f2328;background:#fff;margin:0;padding:16px 20px 26px}
+  h1{font-size:19px;margin:0}
+  .meta{color:#6b7280;font-size:12px;margin:3px 0 12px}
+  h2{font-size:13.5px;margin:16px 0 6px;padding-left:8px;border-left:3px solid #1f5fbf;color:#374151;font-weight:600}
+  h2 .n{color:#9aa2ad;font-weight:400}
+  .headline{background:#f3f7fd;border:1px solid #dbe6f6;border-left:3px solid #1f5fbf;border-radius:6px;padding:8px 12px}
+  .headline div{margin:2px 0}
+  .notes{background:#fffdf3;border:1px solid #efe4bd;border-radius:6px;padding:8px 12px}
+  .notes div{margin:2px 0}
+  .card{background:#fff;border:1px solid #e6e8ec;border-radius:8px;padding:9px 13px;margin-bottom:8px}
+  .card-h{color:#374151}
+  .card-h .muted{margin-left:8px}
+  .muted{color:#6b7280} .small{font-size:12px} .ok{color:#1a7f37} .warn{color:#b42318}
+  .num{font-variant-numeric:tabular-nums}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .sub{font-size:12.5px;color:#4b5563;font-weight:600;margin:12px 0 4px}
+  table.plain{border:0;border-radius:0}
+  table.plain .plaincell{border:0;padding:0 6px 0 0;vertical-align:top}
+  table.plain .plaincell:last-child{padding:0 0 0 6px}
+  .chip{display:inline-block;border:1px solid #e6e8ec;background:#fafbfc;border-radius:999px;
+        padding:2px 10px;font-size:12px;margin:0 6px 6px 0;color:#374151}
+  .chip .d{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9aa2ad;margin-right:5px}
+  .chip.go .d{background:#1a7f37} .chip.half .d{background:#b42318} .chip.done .d{background:#3b6fb6}
+  ul.items{list-style:none;margin:6px 0 0;padding:0}
+  ul.items li{display:block;padding:4px 0;border-top:1px solid #f1f3f5}
+  ul.items li:first-child{border-top:0}
+  ul.items .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9aa2ad;margin-right:6px}
+  ul.items .dot.go{background:#1a7f37} ul.items .dot.wait{background:#9a6700}
+  ul.items .dot.half{background:#b42318} ul.items .dot.hold{background:#6b3fa0} ul.items .dot.done{background:#3b6fb6}
+  ul.items .st{color:#6b7280;font-size:12px;margin-right:6px}
+  ul.items .ti{font-weight:600}
+  ul.items .src{color:#9aa2ad;font-size:11.5px;margin-left:8px}
+  table{width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #e6e8ec;border-radius:8px}
+  th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #eef0f3;font-size:12.5px;
+        vertical-align:top;overflow-wrap:break-word}
+  tr:last-child td{border-bottom:0}
+  th{background:#f7f8fa;color:#6b7280;font-weight:600;font-size:12px}
+  .log{background:#f7f8fa;border-left:3px solid #dfe3e8;padding:5px 9px;margin-top:4px;color:#3d444d;font-size:12px}
+  code{background:#f0f2f5;border-radius:4px;padding:1px 5px;font-family:Consolas,monospace;font-size:12px}
+  a{color:#1f5fbf;text-decoration:none}
+  .links{font-size:12px;color:#6b7280}
+  .links span{margin-right:14px;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>前日总结 · {{dateHuman}}</h1>
+<div class="meta">由 <code>_night\brief.mjs</code> 生成（{{generatedAt}}）· 数据来自 <code>node ws.mjs status --json</code> 与 <code>_night\runs\</code></div>
+
+<div class="headline">{{headline}}</div>
+
+<h2>人话摘要</h2>
+{{notes}}
+
+<h2>需要你处理</h2>
+{{actionsBlock}}
+
+<h2>昨晚夜跑</h2>
+{{nightBlock}}
+
+<h2>昨天白天做了什么</h2>
+{{dayBlock}}
+
+<h2>今早收口</h2>
+{{morningBlock}}
+
+<h2>夜跑看板 <span class="n">与 <code>node ws.mjs board</code> 同源</span></h2>
+{{boardBlock}}
+
+<h2>快捷入口</h2>
+<div class="links">{{linksBlock}}</div>
+
+</body>
+</html>

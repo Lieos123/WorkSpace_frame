@@ -1,0 +1,7 @@
+# 这个工作区里的文件按**原样**存、原样取，不做 CRLF ↔ LF 自动转换。
+#
+# 原因：本机 system 级 git 设了 core.autocrlf=true。它会在 checkout 时把 LF 文件改成 CRLF——
+# 而 Skills\ 等库里大量文件是 LF，夜跑回滚（`git checkout -- .`）或任何一次还原都可能
+# 把整篇 diff 变成"换行符噪声"（2026-10-15 就为这个修过 frontend-design 的 CRLF）。
+# `-text` 覆盖掉 autocrlf，逐字节存；不影响 diff（diff 由 `diff` 属性管，另说）。
+* -text

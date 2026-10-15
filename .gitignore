@@ -1,0 +1,53 @@
+# ═══ WorkSpace 根仓库（框架的版本控制，规则真源：CONVENTIONS.md 第 1 节）═══════
+#
+# 根仓库只跟踪"框架自己"：根规则文件、ws.mjs、_template\、_night\、容器与库的说明文件。
+# 策略是**白名单**：先忽略一切（/*），再把要跟踪的逐个放开（!）。
+#   这样任何项目、工具本体、生成物都默认被忽略——`git add -A` 碰不到子仓库，
+#   也就永远不会变成 gitlink / submodule（这正是当年"根目录不建 git"要防的那个坑）。
+#
+# 不跟踪（保持现状或按判据排除）：
+#   · Skills\、审批窗口\、WorkFlows\<各工作流> 等**项目** —— 各自独立 git 仓库
+#   · Tools\ 工具本体、_archive\ 下休眠项目 —— 同上
+#   · 生成物：TREE.md（ws.mjs tree 生成）、_night\runs\、看板与简报的生成件
+#   · 只在本机有意义的：_night\node-path.txt
+# 判据与各项目 .gitignore 相同："跑一次就会重新生成"或"只在我这台机器上有意义"的不提交。
+/*
+
+# ── 框架文件 ──
+!/.gitignore
+!/.gitattributes
+!/AGENTS.md
+!/ARCHITECTURE.md
+!/CLAUDE.md
+!/CONVENTIONS.md
+!/NIGHT.md
+!/ws.mjs
+
+# ── 新项目模板：整份跟踪 ──
+!/_template/
+
+# ── 夜跑机制：代码 / 配置 / 提示词跟踪，运行产物不跟踪 ──
+!/_night/
+/_night/node-path.txt
+/_night/.lock
+/_night/runs/
+/_night/board/data.json
+/_night/board/index.html
+/_night/brief/data-*.json
+/_night/brief/latest.html
+/_night/brief/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].html
+
+# ── 容器与库：只跟踪说明 / 接线，子项目与工具本体不进 ──
+!/WorkFlows/
+/WorkFlows/*
+!/WorkFlows/README.md
+!/WorkFlows/AGENTS.md
+
+!/_archive/
+/_archive/*
+!/_archive/README.md
+
+!/Tools/
+/Tools/*
+!/Tools/README.md
+!/Tools/_setup/

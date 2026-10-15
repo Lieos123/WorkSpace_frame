@@ -1,0 +1,63 @@
+<!--
+  WorkSpace morning check, 08:30 daily.
+  Registered by _night\register.cmd -> register.mjs (schtasks /create /xml).
+  NOTE: schtasks only accepts UTF-16 XML, so this file is kept declaration-free
+  and UTF-8-readable; register.mjs converts it and injects the current node path.
+  Hard limit PT30M: the check must be out of the way before daytime work starts.
+-->
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>WorkSpace morning check: verify and close out the night run, list items awaiting user approval. See D:\WorkSpace\_night\README.md</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-10-14T08:30:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+    <!-- 补检：机器整夜关机时 08:30 那次不会发生（2026-10-15 实测：机器 09:08 才开机，
+         任务从未运行）。09:45 再来一次，晚开机也能拿到早检。
+         不用 LogonTrigger：加它要管理员权限（实测"拒绝访问"），而本机制坚持免提权。
+         run.mjs 按 06:00-10:00 窗口把关，并会跳过"这一晚已经早检过"的重复命中。 -->
+    <CalendarTrigger>
+      <StartBoundary>2026-10-14T09:45:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>D:\Programs\nodejs\node.exe</Command>
+      <Arguments>D:\WorkSpace\_night\run.mjs morning</Arguments>
+    </Exec>
+  </Actions>
+</Task>

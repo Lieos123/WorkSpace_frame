@@ -1,0 +1,15 @@
+# 产物与本地状态，按项目实际增删
+runs/
+outputs/
+artifacts/
+tmp/
+customer-data/
+node_modules/
+__pycache__/
+.vs/
+bin/
+obj/
+*.log
+*.user
+.DS_Store
+Thumbs.db
