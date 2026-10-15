@@ -9,6 +9,7 @@
 | 本文 `CONVENTIONS.md` | **规范**：项目结构、文件格式、命名、接入流程、边界 |
 | `AGENTS.md` | **行为**：Agent 每次任务收尾要做什么、常用命令、库的位置 |
 | `ARCHITECTURE.md` | **架构总览**：整套工作区架构的可移植说明（模块清单 / 契约汇总 / 参数表）与升级协议 |
+| 根 `.gitignore` | **根仓库的跟踪范围**：白名单（只跟踪框架，见第 1 节「根仓库」） |
 | `Tools\README.md` | **工具库**：装了哪些工具、怎么升级、迁移引用点清单 |
 | `Skills\README.md` | **技能库**：技能怎么入库、怎么分发到各 agent |
 
@@ -24,7 +25,7 @@
 
 - 软件安装包、反编译产物、商业软件本体（`LeadOCR` / `SuperBox` / `SuperWORKS` 那一类）
 - 下载物、压缩包、临时文件（`D:\tmp` 那一类）
-- 工具本体 → 放 `Tools\`（库不是项目：不建 git、不进 TREE 统计）
+- 工具本体 → 放 `Tools\`（库不是项目：不建自己的 git、不进 TREE 统计；`README.md` 与 `_setup\` 随根仓库跟踪，见第 1 节）
 - 可复用技能 → 放 `Skills\skills\<名称>\`
 
 ---
@@ -32,12 +33,13 @@
 ## 1. 工作区结构
 
 ```text
-D:\WorkSpace\
+D:\WorkSpace\      根仓库：只跟踪框架（白名单 .gitignore），项目各自另有仓库
+├─ .gitignore       根仓库的跟踪白名单：默认忽略一切，只放开框架文件
 ├─ AGENTS.md        Agent 行为规则
 ├─ CONVENTIONS.md   本文：项目统一规范
-├─ TREE.md          项目树（自动生成，勿手改）
+├─ TREE.md          项目树（自动生成，勿手改；生成物，不进版本控制）
 ├─ ws.mjs           工作区工具
-├─ Tools\           工具库（不是项目，不建 git、不进 TREE 统计）
+├─ Tools\           工具库（不是项目，不建自己的 git、不进 TREE 统计）
 ├─ Skills\          技能库（本身就是一个符合规范的项目，可当样板）
 ├─ WorkFlows\       工作流容器：一个具体工作流一个子文件夹，各自是独立项目
 ├─ _template\       新项目模板
@@ -45,7 +47,15 @@ D:\WorkSpace\
 └─ <项目名>\        每个项目一个目录，各自是独立的本地 git 仓库
 ```
 
-工作区根目录**不是** git 仓库，也不该是（子仓库会被当成 submodule）。
+### 根仓库（框架的版本控制）
+
+根目录**是**一个 git 仓库，但它是**框架仓库**——只跟踪"框架自己"，不跟踪任何项目。
+
+- **跟踪**：根规则文件（`AGENTS.md` / `CONVENTIONS.md` / `ARCHITECTURE.md` / `CLAUDE.md` / `NIGHT.md`）、`ws.mjs`、`_template\`、`_night\`（代码 / 配置 / 提示词 / `tasks\*.xml` / 手写的 `brief\notes-*.md`）、容器与库的说明文件（`WorkFlows\README.md` 与 `AGENTS.md`、`_archive\README.md`、`Tools\README.md` 与 `_setup\`）。
+- **不跟踪**：所有项目（含容器下的、`Skills\`、`_archive\` 里的休眠项目）、`Tools\` 工具本体、生成物（`TREE.md`、`_night\runs\`、`_night\board\data.json|index.html`、`_night\brief\` 的日期件）、只在本机有意义的 `_night\node-path.txt`。
+- **靠白名单保证不误伤**：根 `.gitignore` 第一条是 `/*`（全部忽略），再把上面"跟踪"清单逐个 `!` 放开。所以**新建的项目目录默认就被忽略**——`git add -A` 碰不到子仓库，永远不会变成 gitlink / submodule。
+- **换行符按原样**：根 `.gitattributes` 写 `* -text`，不做 CRLF ↔ LF 自动转换（否则一次 checkout / 回滚就会把 LF 文件整篇改成 CRLF，diff 变成噪声）。
+- **提交口径**：改的是框架文件 → 在根仓库提交；改的是项目内容 → 在项目自己的仓库提交。两者互不牵连（照第 8 节的收尾动作走）。
 
 ### 容器：`WorkFlows\`（装工作流）
 
@@ -54,7 +64,7 @@ D:\WorkSpace\
 - **`WorkFlows\`**：工作流容器。一个具体工作流一个子文件夹；工作流可以是脚本、SOP 文档、自动化管线、动态工作流脚本——判据还是第 0 节那一条。
 - **标记方式**：容器自己的 `README.md` frontmatter 写 `kind: 容器`。`ws.mjs` 见到标记就把它渲染成容器节点、继续往下扫子项目；容器里"不是项目"的子文件夹会被列进 `TREE.md` 的「需要补齐」，并附接入命令。
 - **建工作流**：`node ws.mjs new WorkFlows\<名称> --desc "一句话"`；已有内容的文件夹用 `ws.mjs adopt`（见第 7 节）。
-- **容器本身不 `git init`**：子目录各自是仓库，容器建仓会让它们变成 gitlink。
+- **容器本身不 `git init`**：子目录各自是仓库，容器建仓会让它们变成 gitlink（容器的说明文件由根仓库跟踪，容器本身仍不建仓）。
 - 容器只装项目：跨工作流共享的工具进 `Tools\`、共享技能进 `Skills\`。
 
 将来再加别的容器（按客户、按阶段之类归拢）照这个办法标记即可。
@@ -126,6 +136,7 @@ next: 下一步要做的第一件事
 - **项目级 `AGENTS.md`**：从模板复制即可，至少包含"任务收尾的固定动作"。项目有特殊约束（构建方式、不能碰的目录、外部依赖）就往上加。
 - **`.gitignore` 基线**：模板给的是通用基线——产物目录（`runs/` `outputs/` `artifacts/` `tmp/` `customer-data/`）+ 语言相关（`node_modules/` `bin/` `obj/`）+ 系统垃圾。按项目实际增删。
 - 判断标准：这个文件是不是"跑一次就会重新生成"或者"只在我这台机器上有意义"？是就别提交。
+- 工作区根那份 `.gitignore` 是**反过来的白名单**（先全部忽略、只放开框架文件），作用是让根仓库碰不到项目，见第 1 节「根仓库」；判据和项目这份相同。
 
 ### `NIGHT.md`（夜间清单）
 
@@ -185,8 +196,10 @@ next: 下一步要做的第一件事
 
 1. 往项目 `LOG.md` 追加一条当日条目。
 2. 更新项目 `README.md` frontmatter 的 `status` 和 `next`。
-3. `git add -A && git commit`，提交信息一句话说清改了什么。
+3. `git add -A && git commit`，提交信息一句话说清改了什么——**改的是项目就在项目仓库提交，改的是框架文件就在根仓库提交**（两边互不牵连，见第 1 节「根仓库」）。
 4. 项目层面状态有变化时，跑 `node D:\WorkSpace\ws.mjs tree` 刷新项目树。
+
+**框架文件没有项目那样的 LOG / README**：改的是框架（根规则 / `ws.mjs` / `_night\` / `_template\`）时，记录就是「根仓库提交（一句话说清）+ 动到架构就按 `ARCHITECTURE.md` 第 8 节记一条变更历史」。
 
 ---
 

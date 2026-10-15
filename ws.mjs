@@ -702,18 +702,15 @@ function cmdReview(args) {
     for (const a of rejected) console.log(`  · ${a}`);
   }
 
-  // 清单文件跟着项目走，顺手提交，别给白天留个脏树
+  // 清单文件跟着项目走（根 NIGHT.md 走根仓库），顺手提交，别给白天留个脏树
   const touched = [...edits.keys()];
   for (const file of touched) {
     const dir = path.dirname(file);
-    if (dir === ROOT) {
-      console.log(`\n${path.basename(file)} 在工作区根，不受版本控制，无需提交。`);
-      continue;
-    }
     const rel = path.relative(dir, file).replace(/\\/g, '/');
+    const where = path.relative(ROOT, dir).replace(/\\/g, '/') || '工作区根';
     const msg = `夜间清单：用户审核通过 ${approved.length} 条、否掉 ${rejected.length} 条`;
     const ok = commitOneFile(dir, rel, msg);
-    console.log(ok ? `\n${path.relative(ROOT, dir).replace(/\\/g, '/')}：${ok}` : `\n${path.relative(ROOT, dir).replace(/\\/g, '/')}：提交失败，记得手动提交 ${rel}`);
+    console.log(ok ? `\n${where}：${ok}` : `\n${where}：提交失败，记得手动提交 ${rel}`);
   }
 }
 

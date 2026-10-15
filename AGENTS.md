@@ -7,12 +7,13 @@
 - 项目树（自动生成，勿手改）：`TREE.md`
 - 工作区工具：`ws.mjs`
 - 架构总览（可移植 · 可升级；外部带来的改进版按它第 8 节执行升级）：`ARCHITECTURE.md`
+- 根仓库：`D:\WorkSpace` 本身是一个 git 仓库，但**只跟踪框架**——根规则文件、`ws.mjs`、`_template\`、`_night\`、容器与库的说明文件；项目、工具本体、生成物一律不进（白名单 `.gitignore` 兜底，口径见 `CONVENTIONS.md` 第 1 节「根仓库」）。
 - 新项目模板：`_template\`　休眠项目：`_archive\`
 - 工作流容器：`WorkFlows\`（容器不是项目：一个具体工作流一个子文件夹，建法见 `CONVENTIONS.md` 第 1 节）
 
 ## 库在哪（都是库，不是项目，不要当项目处理）
 
-- **工具库 `Tools\`**：CodeGraph / AOCI-CODE 等工具本体。**不建 git、不进 TREE 统计。** `aoci.exe` 等被多处 agent 配置用绝对路径引用，**移动它必须同步改所有引用点**（ZCode 等配置、用户 PATH、`_setup` 脚本、各 agent 指路文件、工作区文件、记忆），清单在 `Tools\README.md` 的「迁移记录」。装新工具按那里的 `_setup` 脚本方式加。
+- **工具库 `Tools\`**：CodeGraph / AOCI-CODE 等工具本体。**不建自己的 git（工具本体不进版本控制；只 `README.md` 与 `_setup\` 随根仓库跟踪）、不进 TREE 统计。** `aoci.exe` 等被多处 agent 配置用绝对路径引用，**移动它必须同步改所有引用点**（ZCode 等配置、用户 PATH、`_setup` 脚本、各 agent 指路文件、工作区文件、记忆），清单在 `Tools\README.md` 的「迁移记录」。装新工具按那里的 `_setup` 脚本方式加。
 - **技能库 `Skills\`**：所有 agent 共用技能的本地真源（离线可用）。技能本体只维护一份，`node Skills\sync.mjs link` 用目录链接分发到 `~\.zcode\skills`、`~\.codex\skills`、`~\.agents\skills`。**新做的可复用技能入库到这里**，不要只丢在某个 agent 的目录或某个项目里；用法见 `Skills\README.md`。
 
 ## 任务收尾的固定动作
@@ -21,8 +22,10 @@
 
 1. 往项目 `LOG.md` 追加一条当日条目（做了什么 / 为什么 / 结果 / 下一步），日期倒序。
 2. 更新项目 `README.md` frontmatter 的 `status`（活跃·暂停·已完成·归档）和 `next`。
-3. `git add -A && git commit`，提交信息一句话说清改了什么。
+3. `git add -A && git commit`，提交信息一句话说清改了什么——**项目里改的在项目仓库提交，框架文件（根规则 / `ws.mjs` / `_night\` / `_template\`）在根仓库提交**，两边互不牵连。
 4. 项目层面状态有变化时，跑 `node D:\WorkSpace\ws.mjs tree` 刷新项目树。
+
+**改的是框架文件时**（根规则 / `ws.mjs` / `_night\` / `_template\`）：第 1、2 步没有对应文件可写——记录就是「根仓库提交（一句话说清）+ 动到架构就记 `ARCHITECTURE.md` 的变更历史」。
 
 ## 常用命令
 
@@ -77,6 +80,8 @@ node ws.mjs task add "标题" --desc "说明"  # 攒一条夜活（默认 [待�
 
 ## 几条最容易踩的硬性禁止
 
-- **不要把工作区根目录变成 git 仓库**——子仓库会被当成 submodule。项目各自独立 git。
+- **不要把项目、工具本体、生成物加进根仓库**——根仓库（`D:\WorkSpace`）只跟踪框架，白名单 `.gitignore` 已经把其余全部忽略；子仓库一旦被 `git add` 进去就会变成 gitlink / submodule，日常操作全是坑。项目各自独立 git。
+- **不要在根仓库里 `git reset --hard` / `git clean -xfd`**——白名单之外的东西版本控制里没有，删了找不回来。要回滚只回滚框架文件。
+- **不要改根 `.gitattributes` 的 `* -text`**（会引入 CRLF ↔ LF 自动转换：一次 checkout 就把 LF 文件整篇改成 CRLF，diff 全是噪声）。
 - **不要把软件本体、反编译产物、下载物、压缩包放进工作区**；判据见 `CONVENTIONS.md` 第 0 节。
 - **不要批量搬迁老项目**——会切断 Agent 会话记忆、`.zcode\config.json` 的 `--repo` 绝对路径、`.codegraph\` 索引和 AOCI hooks。老项目用到哪个搬哪个，搬完重跑 `codegraph init` 和 AOCI 接线。
