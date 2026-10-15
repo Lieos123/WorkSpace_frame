@@ -17,6 +17,7 @@ updated: 2026-10-15
 
 - [待审] 根仓库的提交也纳入「今天推进了」 | `ws.mjs today` 与简报的「日间推进」只扫项目仓库，框架改动看不见；把根仓库（`D:\WorkSpace`）的提交一并列出，口径统一在 `ws.mjs` 一处 | 模型 2026-10-15
 - [待审] 三个项目仓库补 `* -text`（或 `core.autocrlf=false`） | 本机 system 级 `autocrlf=true`，回滚 / checkout 会把 LF 文件整篇改成 CRLF；根仓库已用 `.gitattributes` 免疫，项目仓库还没有（Skills 就为这个修过一次 CRLF） | 模型 2026-10-15
+- [待审] 夜跑收尾后自动 push 根仓库到 GitHub | 现在远程推送全靠手动 `git push`；要让早检收口后自动把框架提交推上去（注意：远程是公开仓库，推的是框架不含项目），先要解掉 `_night\prompts\*.md` 里的 `git push` 硬禁令并定好失败口径 | 模型 2026-10-15
 
 ## 已完成
 

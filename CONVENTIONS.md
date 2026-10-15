@@ -56,6 +56,7 @@ D:\WorkSpace\      根仓库：只跟踪框架（白名单 .gitignore），项�
 - **靠白名单保证不误伤**：根 `.gitignore` 第一条是 `/*`（全部忽略），再把上面"跟踪"清单逐个 `!` 放开。所以**新建的项目目录默认就被忽略**——`git add -A` 碰不到子仓库，永远不会变成 gitlink / submodule。
 - **换行符按原样**：根 `.gitattributes` 写 `* -text`，不做 CRLF ↔ LF 自动转换（否则一次 checkout / 回滚就会把 LF 文件整篇改成 CRLF，diff 变成噪声）。
 - **提交口径**：改的是框架文件 → 在根仓库提交；改的是项目内容 → 在项目自己的仓库提交。两者互不牵连（照第 8 节的收尾动作走）。
+- **远程**：`https://github.com/Lieos123/WorkSpace_frame.git`（**公开**，2026-10-15 建立，分支 `master`）。推送是**手动**动作（`git push`）：夜跑 / 早检不推（提示词里的 `git push` 硬禁令不变）。凭据走本机 Git Credential Manager（账号 `Lieos123`），首次推送后已无需再登录。注意公开仓库里能看到提交作者邮箱与本机路径——转私有：GitHub 仓库 Settings → General → Change visibility。
 
 ### 容器：`WorkFlows\`（装工作流）
 
