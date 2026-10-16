@@ -163,3 +163,13 @@ test('顶部业务项目统计不把功能条目混进分母，无业务项目�
   assert.match(sections.chipsBar(onlyFunctions), /业务项目 0 个（活跃 0）/);
   assert.match(sections.functionalGroups(onlyFunctions), /WorkFlows/);
 });
+
+test('功能目录提供唯一分组锚点和明确命名的展开入口，Tools 直接打开说明', () => {
+  const html = sections.functionalGroups(groupedStatus);
+  for (const id of ['skills', 'tools', 'workflows', 'shared']) {
+    assert.equal(html.split(`id="function-${id}"`).length - 1, 1);
+  }
+  assert.match(html, /aria-label="Skills 的状态与下一步/);
+  assert.match(html, /aria-label="WorkFlows 的状态与下一步/);
+  assert.match(html, /href="file:[^"]*Tools\/README\.md"[^>]*>查看工具说明</);
+});

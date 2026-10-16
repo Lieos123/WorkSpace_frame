@@ -130,20 +130,23 @@ function renderNext(nextText) {
 export function projects(status) {
   const business = (status.projects ?? []).filter((p) => !p.group || p.group === 'business');
   return business.length ? entryTable(status, business, '业务项目表')
-    : '<div class="empty-hint">暂无业务项目。技能、工具、工作流与公共组件在功能组中查看。</div>';
+    : '<div class="empty-hint project-empty"><b>暂无业务项目</b><p>具体业务项目接入后，会在这里展示状态与下一步。</p></div>';
 }
 
 export function functionalGroups(status) {
   const groups = status.functionalGroups ?? [];
   if (!groups.length) return '<div class="empty-hint">暂无功能组。</div>';
-  return '<div class="function-grid">' + groups.map((g) => {
+  return '<div class="function-directory">' + groups.map((g) => {
     const members = (status.projects ?? []).filter((p) => p.group === g.id);
-    return `<div class="card function-card"><div class="card-h"><b><a href="${esc(fileUrl(`${g.rel}/README.md`))}">${esc(g.name)}</a></b>` +
-      `<span class="b b-muted">基础功能</span></div><p class="group-desc">${fmtInline(g.desc)}</p>` +
-      (members.length ? `<details class="group-members"><summary>查看 ${members.length} 个功能条目的状态与下一步</summary>` +
+    const guide = esc(fileUrl(`${g.rel}/README.md`));
+    return `<div class="function-entry" id="function-${esc(g.id)}"><div class="group-intro">` +
+      `<h3 class="group-title"><a href="${guide}">${esc(g.name)}</a></h3>` +
+      `<p class="group-desc">${fmtInline(g.desc)}</p></div>` +
+      (members.length ? `<details class="group-members"><summary aria-label="${esc(g.name)} 的状态与下一步（${members.length} 个条目）">` +
+        `<span>状态与下一步</span><span class="member-count">${members.length}</span></summary>` +
         '<p class="table-hint">左右滑动表格查看全部列。</p>' +
         entryTable(status, members, `${g.name}功能条目表`) + '</details>'
-        : '<div class="muted small">工具清单与使用方式请查看本组说明。</div>') + '</div>';
+        : `<a class="group-guide" href="${guide}">查看工具说明</a>`) + '</div>';
   }).join('') + '</div>';
 }
 

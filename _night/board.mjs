@@ -34,6 +34,8 @@ function buildSlots(status) {
     tonight: tonightCard(status),
     queues: queues(status),
     functions: functionalGroups(status),
+    functionNav: (status.functionalGroups ?? []).map((g) =>
+      `<a href="#function-${esc(g.id)}">${esc(g.name)}</a>`).join(''),
     projects: projects(status),
     day: progress(status),
     history: history(status, 7),

@@ -1,294 +1,241 @@
 <!DOCTYPE html>
 <!--
-  夜跑看板模板（由 _night\board.mjs 填充，勿手改生成物 index.html）
-
-  改文案：直接改下面 HTML 里的汉字。
-  不要动 {{占位符}} 的名字，也不要删任何一个——少了占位符 board.mjs 会直接报错。
-  全部占位符（12 个）：
-    generatedAt 生成时间        dateHuman  这一页的日期（含星期）
-    statusBar   顶部状态灯      pending    等你点头的条目（待审）
-    tonight     今晚要跑的条目（待跑）      queues  两级清单
-    day         今日推进（一行一项目）      history 夜跑历史
-    functions   功能组          projects   业务项目组
-    needsFix    需要补齐（没有就一行"没有"）
-    links       快捷链接
-
-  视觉约定：顶栏是「夜色」，正文是白天的纸面；状态用颜色 + 胶囊标签两重表达。
-  排版原则：摘要优先——标题与来源直接可见，说明通过原生 details 展开，支持键盘与触屏。
-  快照时间与刷新方式明确展示；窄屏表格局部滚动，不让整页横向溢出。
-  分区片段（sections.mjs）与前日简报共用，它的 CSS 在简报模板里，这里只管看板页面自己的样式。
+  工作区控制台，由 _night/board.mjs 生成；不要手改 index.html。
+  13 个槽位：generatedAt、dateHuman、statusBar、pending、tonight、queues、
+  functions、functionNav、projects、day、history、needsFix、links。
+  深青导航承载功能入口；主列为能力目录与业务，辅助列为审批和队列。
+  不使用客户端脚本、外部字体或资源；详情使用原生 details/summary。
 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>夜跑看板 · WorkSpace</title>
+<title>WorkSpace 工作台</title>
 <style>
   :root{
-    --night:#141b2b;            /* 顶栏底色：夜色，刻意不用纯黑 */
-    --paper:#f2f4f7;            /* 页面底 */
-    --card:#ffffff;
-    --ink:#18202d;
-    --ink-2:#4b5667;
-    --ink-3:#647184;
-    --rule:#e3e7ee;
-    --rule-2:#eef1f5;
-    --accent:#2453b8;
-    --shadow:0 1px 2px rgba(24,32,45,.05);
-    /* 状态：每种一组「字色 + 浅底」，列表里做成胶囊 */
-    --go:#17784f;    --go-bg:#e4f3ea;
-    --wait:#8c5a06;  --wait-bg:#fbf0d6;
-    --half:#b3261e;  --half-bg:#fbe6e4;
-    --hold:#6638a6;  --hold-bg:#eee7f8;
-    --done:#2c5d9c;  --done-bg:#e5edf8;
+    --paper:#eef3f5;--surface:#fff;--ink:#223642;--rail:#173f48;--accent:#176f64;--rule:#d7e2e6;
+    --muted:#5c707a;--soft:#f5f8f9;--go:#17784f;--go-bg:#e5f2e9;--wait:#855607;--wait-bg:#fbf0d8;
+    --half:#b3261e;--half-bg:#fbe9e6;--hold:#6638a6;--hold-bg:#f0eaf8;--done:#2c5d9c;--done-bg:#e8eff8;
   }
   *{box-sizing:border-box}
-  html{scroll-padding-top:18px}
-  body{margin:0;background:var(--paper);color:var(--ink);
-       font:14px/1.6 "Microsoft YaHei UI","PingFang SC","Segoe UI",system-ui,sans-serif;
-       -webkit-font-smoothing:antialiased}
-  .wrap{max-width:1160px;margin:0 auto;padding:24px 24px 40px}
-  .skip-link{position:absolute;left:24px;top:-80px;background:#fff;padding:10px 16px;z-index:1}
-  .skip-link:focus{top:8px}
-
-  /* ---- 顶栏：夜色 + 衬线标题 + 状态灯 ---- */
-  .mast{background:var(--night);color:#e6eaf2;padding:26px 0 22px}
-  .mast .wrap{padding:0 24px}
-  .mast-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .mast h1{margin:0;font-size:28px;font-weight:600;line-height:1.3;color:#f5f7fb}
-  .date{font-size:15px;color:#aeb8c8;font-variant-numeric:tabular-nums}
-  .mast .meta{margin-top:6px;color:#b1bbcc;font-size:12px}
-  .lead{margin:9px 0 0;color:#c9d2df;font-size:14px}
-  .mast .chips{margin-top:16px}
-  .mast .chip{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#d5dbe6}
-  .mast .chip .d{background:#7d8799}
-  .mast .chip.go .d{background:#6ee0a4}
-  .mast .chip.wait .d{background:#f5c063}
-  .mast .chip.half .d{background:#ff8a80}
-  .mast .chip.hold .d{background:#c6aaff}
-  .mast .chip.done .d{background:#9cc3ff}
-  .section-nav{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:20px;padding-top:12px;border-top:1px solid #354052}
-  .section-nav a{color:#d5dbe6;padding:4px 10px;border-radius:5px;font-size:13px}
-  .section-nav a:hover,.section-nav a:focus-visible{background:#2a3549;color:#fff;text-decoration:none}
-  .snapshot-note{margin:0 0 24px;padding:10px 14px;border-left:3px solid var(--accent);background:#e9effa;color:#374c70;font-size:12.5px}
-  .snapshot-note a{font-weight:600;text-decoration:underline}
-
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--rule);
-        border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--ink-2)}
-  .chip .d{width:6px;height:6px;border-radius:50%;background:#9aa2ad;flex:0 0 auto}
-
-  /* ---- 正文分区 ---- */
-  section{margin-bottom:30px}
-  h2{display:flex;align-items:center;gap:12px;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--ink-2)}
-  h2::after{content:"";flex:1 1 auto;height:1px;background:var(--rule)}
-  h2 .n{color:var(--ink-3);font-weight:400;font-size:12.5px}
-  .section-hint{margin:-4px 0 12px;color:var(--ink-3);font-size:12.5px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
-  @media(max-width:760px){.grid{grid-template-columns:1fr}}
-
-  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px 12px;
-        box-shadow:var(--shadow)}
-  section > .card + .card{margin-top:12px}
-  /* 需要处理的两张卡：左侧色条直接标出它的状态（待审＝琥珀，待跑＝绿） */
-  .rail-wait{box-shadow:inset 3px 0 0 var(--wait),var(--shadow)}
-  .rail-go{box-shadow:inset 3px 0 0 var(--go),var(--shadow)}
-  .card-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-  .card-h b{font-size:14.5px;font-weight:600;color:var(--ink)}
-  .card-h .src{margin-left:auto}
-  .function-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
-  .function-card{min-width:0}
-  .function-card:has(> .group-members[open]){grid-column:1 / -1}
-  .group-desc{margin:10px 0;color:var(--ink-2);font-size:13px;overflow-wrap:anywhere}
-  .group-members > summary{cursor:pointer;color:var(--accent);font-size:12.5px}
-  .group-members[open] > summary{margin-bottom:12px}
-  .function-card td.n{white-space:normal}
-  .card-summary{margin-top:8px;color:var(--ink-2);font-size:13px}
-  .card-summary strong{font-size:26px;line-height:1.4;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-  .card-help{display:block;color:var(--ink-3);font-size:12px;margin:2px 0 8px}
-  .empty-hint,.quiet-bar{padding:13px 16px;background:#fff;border:1px solid var(--rule);border-radius:8px;color:var(--ink-2);font-size:13px}
-  .card .empty-hint{background:#f6f8fb;border:0;padding:12px;margin:12px 0 2px}
-  .ok-bar{color:var(--go);background:#f0f8f3;border-color:#cfe5d7}
-
-  .muted{color:var(--ink-3)} .small{font-size:12px} .num{font-variant-numeric:tabular-nums}
-  .ok{color:var(--go)} .warn{color:var(--half)}
-
-  /* 清单条目：默认摘要，全文通过原生详情展开 */
-  ul.items{list-style:none;margin:8px 0 0;padding:0}
-  ul.items > li{display:block;padding:8px 0;border-top:1px solid var(--rule-2)}
-  ul.items li:first-child{border-top:0}
-  ul.items li:has(> .st) > .dot{display:none}
-  .dot{width:7px;height:7px;border-radius:50%;background:#9aa2ad;flex:0 0 auto}
-  .dot.go{background:var(--go)} .dot.wait{background:var(--wait)}
-  .dot.half{background:var(--half)} .dot.hold{background:var(--hold)} .dot.done{background:var(--done)}
-  .st{flex:0 0 auto;padding:1px 9px;border-radius:999px;font-size:12px;line-height:1.6;
-      color:var(--ink-2);background:var(--rule-2)}
-  .dot.go + .st{color:var(--go);background:var(--go-bg)}
-  .dot.wait + .st{color:var(--wait);background:var(--wait-bg)}
-  .dot.half + .st{color:var(--half);background:var(--half-bg)}
-  .dot.hold + .st{color:var(--hold);background:var(--hold-bg)}
-  .dot.done + .st{color:var(--done);background:var(--done-bg)}
-  .task-detail .dot{display:none}
-  .task-detail summary{display:grid;grid-template-columns:auto auto minmax(0,1fr) 18px;align-items:start;gap:8px;
-                       cursor:pointer;list-style:none;border-radius:4px;padding:6px 0;line-height:1.6}
-  .task-detail summary::-webkit-details-marker{display:none}
-  .task-detail summary::after{content:'＋';color:var(--accent);text-align:center;font-size:16px;line-height:22px}
-  .task-detail[open] > summary::after{content:'−'}
-  .task-detail summary:hover .ti{color:var(--accent)}
-  .tag{display:inline-block;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-       color:var(--ink-2);font-size:12px;padding:1px 6px;background:#f0f3f8;border-radius:4px}
-  .task-detail .src{display:none}
-  .task-note{margin:8px 0 2px;padding:12px;background:#f5f7fb;border-radius:6px;color:var(--ink-2);font-size:13px;overflow-wrap:anywhere}
-  .task-origin{margin-top:8px;font-size:11.5px;color:var(--ink-3);overflow-wrap:anywhere}
-  .task-note code{overflow-wrap:anywhere}
-  .ti{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
-  .src{flex:0 0 auto;max-width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-       color:var(--ink-3);font-size:11.5px;font-variant-numeric:tabular-nums}
-
-  /* 表格：项目一览 / 今日推进 / 夜跑历史 */
-  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--rule);
-        border-radius:12px;overflow:hidden;box-shadow:var(--shadow);table-layout:fixed}
-  th,td{text-align:left;padding:10px 14px;font-size:13.5px;vertical-align:top;
-        border-bottom:1px solid var(--rule-2);overflow-wrap:anywhere}
-  tr:last-child td{border-bottom:0}
-  th{background:#fbfcfd;color:var(--ink-3);font-weight:500;font-size:12px;white-space:nowrap}
-  td b{font-weight:600;color:var(--ink)}
-  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
-  .table-scroll{max-width:100%;overflow-x:auto;border-radius:12px}
-  .table-hint{display:none}
-  .proj-head{display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px}
-  .proj-head a b{color:var(--accent)}
-  .proj-desc{margin-top:6px;font-size:12px;color:var(--ink-3)}
-  .b{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11.5px;font-weight:500;line-height:1.65;white-space:nowrap;vertical-align:middle}
-  .b-go{color:var(--go);background:var(--go-bg)}
-  .b-wait{color:var(--wait);background:var(--wait-bg)}
-  .b-half{color:var(--half);background:var(--half-bg)}
-  .b-hold{color:var(--hold);background:var(--hold-bg)}
-  .b-done{color:var(--done);background:var(--done-bg)}
-  .b-muted{color:var(--ink-2);background:var(--rule-2)}
-  .upd-time{font-size:13px;margin-bottom:4px}
-  .next-list{margin:10px 0 0;padding-left:18px}
-  .next-list li{margin:5px 0}
-  .next-detail summary{cursor:pointer;border-radius:4px;overflow-wrap:anywhere}
-  .detail-hint{display:block;margin-top:4px;color:var(--accent);font-size:12px}
-
-  code{background:#edf0f4;border-radius:4px;padding:1px 5px;font:12px Consolas,"Cascadia Mono",monospace}
+  html{scroll-padding-top:24px}
+  body{margin:0;background:var(--paper);color:var(--ink);font:13.5px/1.6 "Segoe UI Variable Text","Microsoft YaHei UI","PingFang SC",sans-serif;-webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
-  a:focus-visible,summary:focus-visible,.table-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:2px}
-
-  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:12.5px;
-         display:flex;flex-wrap:wrap;gap:8px 20px}
-  .technical{flex:1 1 100%;margin-top:4px;overflow-wrap:anywhere}
-  .technical summary{cursor:pointer;color:var(--ink-2);width:fit-content}
-  .technical p{margin:8px 0}
-
-  /* 窄屏：单列；表格保留列宽，整体横向滚动，不挤成一团 */
-  @media(max-width:640px){
-    .wrap{padding-left:14px;padding-right:14px}
-    .mast .wrap{padding:0 14px}
-    .mast h1{font-size:26px}
-    .chips{gap:6px}
-    .mast{padding-top:20px}
-    .mast-top{display:block}
-    .date{margin-top:6px;font-size:13px}
-    .section-nav{gap:4px;margin-top:16px}
-    .section-nav a{padding:5px 7px}
-    .snapshot-note{margin-bottom:22px}
-    section:has(.table-scroll) > .table-hint,.group-members > .table-hint{display:block;color:var(--ink-3);font-size:12px;margin:0 0 8px}
-    table{min-width:560px}
-    th,td{padding:8px 10px;font-size:13px}
-    td.n{white-space:normal}   /* 窄屏下数字串允许换行，免得撑破列宽叠到隔壁 */
-    .task-detail summary{grid-template-columns:auto minmax(0,1fr) 18px;gap:6px 8px}
-    .task-detail .tag{grid-column:2;grid-row:1;justify-self:start;max-width:100%}
-    .task-detail .ti{grid-column:1 / 3;grid-row:2}
-    .task-detail summary::after{grid-column:3;grid-row:1 / 3;align-self:center}
-    .card{padding:14px}
-    .function-grid{grid-template-columns:minmax(0,1fr)}
-    .chip{max-width:100%;font-size:12px}
-    footer{margin-top:24px;gap:8px 14px}
+  a:focus-visible,summary:focus-visible,.table-scroll:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:3px}
+  .skip-link{position:fixed;top:-80px;left:16px;z-index:3;background:var(--surface);padding:10px 16px;opacity:0}
+  .skip-link:focus{top:10px;opacity:1}
+  .app-shell{display:grid;grid-template-columns:208px minmax(0,1fr);min-height:100vh}
+  .sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--rail);color:#d5e4e7;padding:30px 18px 22px;display:flex;flex-direction:column}
+  .brand{display:block;color:#fff;font:650 23px/1.2 "Segoe UI Variable Display","Microsoft YaHei UI",sans-serif;letter-spacing:-.6px;padding:0 12px}
+  .brand-note{color:#a9c3c9;font-size:12px;margin:8px 12px 30px}
+  .sidebar nav{display:grid;gap:5px}
+  .sidebar nav a{display:block;color:#d5e4e7;padding:9px 12px;border-radius:6px;overflow-wrap:anywhere}
+  .sidebar nav a:hover{background:#28535c;text-decoration:none;color:#fff}
+  .sidebar nav a:focus-visible{outline-color:#b9e9df}
+  .sidebar nav a[aria-current]{background:#fff;color:var(--rail);font-weight:650}
+  .nav-label{margin:28px 12px 9px;color:#a9c3c9;font-size:12px}
+  .rail-foot{margin-top:auto;padding:20px 12px 0;border-top:1px solid #38616a;font-size:12px;color:#a9c3c9}
+  .rail-foot p{margin:0 0 5px}
+  .rail-foot a{color:#e0eeed}
+  .workspace{width:100%;max-width:1620px;margin:0 auto;padding:28px 30px 24px;min-width:0}
+  .mast{margin-bottom:24px}
+  .mast-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  h1{margin:0;font:650 26px/1.3 "Segoe UI Variable Display","Microsoft YaHei UI",sans-serif;letter-spacing:-.4px}
+  .date{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+  .meta{margin-top:8px;color:var(--muted);font-size:12px}
+  .meta a{margin-left:12px;text-decoration:underline;text-underline-offset:3px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule)}
+  .chip{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;max-width:100%}
+  .chip .d{width:6px;height:6px;border-radius:50%;background:#78919d;flex:0 0 auto}
+  .chip.go{color:var(--go)}.chip.go .d{background:var(--go)}
+  .chip.wait{color:var(--wait)}.chip.wait .d{background:var(--wait)}
+  .chip.half{color:var(--half)}.chip.half .d{background:var(--half)}
+  .chip.hold{color:var(--hold)}.chip.hold .d{background:var(--hold)}
+  .chip.done .d{background:var(--done)}
+  .workspace-layout{display:grid;grid-template-columns:minmax(0,1fr) 314px;gap:26px;align-items:start}
+  .primary,.activity{min-width:0}
+  section{margin-bottom:26px;min-width:0}
+  h2{margin:0 0 12px;font-size:16px;line-height:1.45;font-weight:650;color:var(--ink)}
+  h2 .n{font-size:12px;color:var(--muted);font-weight:400;margin-left:8px}
+  .section-hint{color:var(--muted);font-size:12px;margin:-5px 0 14px;max-width:70ch}
+  .section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+  .section-heading .section-hint{margin:0 0 12px;text-align:right}
+  .function-directory{background:var(--surface);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+  .function-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px;align-items:center;padding:18px 20px;border-top:1px solid var(--rule);scroll-margin-top:24px}
+  .function-entry:first-child{border-top:0}
+  .function-entry:target{background:#eff8f5;box-shadow:inset 3px 0 var(--accent)}
+  .group-title{margin:0 0 4px;font-size:17px;line-height:1.35;font-weight:650;letter-spacing:-.2px}
+  .group-title a{color:var(--ink)}
+  .group-title a:hover{color:var(--accent)}
+  .group-desc{margin:0;max-width:50ch;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+  .group-members{min-width:0;font-size:12px}
+  .group-members > summary{cursor:pointer;color:var(--accent);white-space:nowrap}
+  .member-count{display:inline-block;margin-left:7px;min-width:20px;padding:0 5px;border:1px solid #b7d6ce;border-radius:4px;text-align:center;font-variant-numeric:tabular-nums}
+  .group-members[open]{grid-column:1 / -1}
+  .group-members[open] > summary{margin-bottom:12px}
+  .group-guide{font-size:12px;white-space:nowrap;text-decoration:underline;text-underline-offset:3px}
+  .project-empty{border:1px dashed #b9cbd2;background:transparent;padding:19px 20px;border-radius:8px}
+  .project-empty b{font-size:14px;font-weight:600}
+  .project-empty p{color:var(--muted);font-size:12px;margin:5px 0 0}
+  .activity{padding-left:24px;border-left:1px solid var(--rule)}
+  .activity section{margin-bottom:22px}
+  .task-stack{display:grid;gap:12px}
+  .card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 15px}
+  .rail-wait{border-top:3px solid #b58632}
+  .rail-go{border-top:3px solid #4d8b76}
+  .card-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px}
+  .card-h b{font-size:13px;font-weight:650}
+  .card-summary{font-size:12px;color:var(--muted);margin:5px 0 0}
+  .card-summary strong{font-size:22px;font-weight:600;color:var(--ink);line-height:1.3;font-variant-numeric:tabular-nums;margin-right:3px}
+  .card-help{display:block;font-size:11.5px;margin:5px 0 0;color:var(--muted)}
+  .empty-hint:not(.project-empty),.quiet-bar{padding:13px 15px;color:var(--muted);font-size:12px;background:var(--surface);border:1px solid var(--rule);border-radius:8px}
+  .card .empty-hint{padding:9px 0 0;border:0;background:transparent;font-size:12px}
+  .activity .sub-card .card-h b{display:none}
+  .muted{color:var(--muted)}.small{font-size:11.5px}.num{font-variant-numeric:tabular-nums}
+  .ok{color:var(--go)}.warn{color:var(--half)}
+  ul.items{list-style:none;margin:10px 0 0;padding:0}
+  ul.items > li{padding:7px 0;border-top:1px solid #e9eff1}
+  ul.items > li:first-child{border-top:0}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:5px}
+  .dot.go{background:var(--go)}.dot.wait{background:var(--wait)}.dot.half{background:var(--half)}.dot.hold{background:var(--hold)}.dot.done{background:var(--done)}
+  .st,.b{display:inline-block;font-size:11px;line-height:1.65;border-radius:4px;padding:1px 6px;white-space:nowrap;font-weight:500;vertical-align:middle}
+  .st{color:var(--muted);background:var(--soft)}
+  .dot.go + .st,.b-go{color:var(--go);background:var(--go-bg)}
+  .dot.wait + .st,.b-wait{color:var(--wait);background:var(--wait-bg)}
+  .dot.half + .st,.b-half{color:var(--half);background:var(--half-bg)}
+  .dot.hold + .st,.b-hold{color:var(--hold);background:var(--hold-bg)}
+  .dot.done + .st,.b-done{color:var(--done);background:var(--done-bg)}
+  .b-muted{color:var(--muted);background:var(--soft)}
+  .task-detail .dot{display:none}
+  .task-detail > summary{display:grid;grid-template-columns:auto minmax(0,1fr) 14px;gap:5px 7px;align-items:start;cursor:pointer;list-style:none;padding:4px 0;border-radius:3px}
+  .task-detail summary::-webkit-details-marker{display:none}
+  .task-detail summary::after{content:'＋';grid-column:3;grid-row:1 / 3;align-self:center;color:var(--accent);font-size:15px}
+  .task-detail[open] > summary::after{content:'−'}
+  .tag{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;padding:1px 0}
+  .task-detail .tag{grid-column:2;grid-row:1}
+  .ti{overflow-wrap:anywhere;min-width:0}
+  .task-detail .ti{grid-column:1 / 3;grid-row:2;font-size:12.5px;font-weight:500;line-height:1.65}
+  .task-detail summary:hover .ti{color:var(--accent)}
+  .task-detail .src{display:none}
+  .task-note{padding:10px;margin:7px 0 0;background:var(--soft);color:var(--muted);font-size:12px;overflow-wrap:anywhere;border-radius:5px;max-width:72ch}
+  .task-origin{margin-top:8px;font-size:11px;color:var(--muted)}
+  table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;background:var(--surface);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;vertical-align:top;border-bottom:1px solid #e6edf0;overflow-wrap:anywhere;font-size:12.5px}
+  th{font-size:11.5px;color:var(--muted);font-weight:500;background:var(--soft)}
+  tr:last-child td{border-bottom:0}
+  .table-scroll{max-width:100%;overflow-x:auto;border-radius:8px}
+  .table-hint{display:none}
+  .proj-head{display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px}
+  .proj-head b{font-weight:600}
+  .proj-desc{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .upd-time{font-size:12px;margin-bottom:3px;font-variant-numeric:tabular-nums}
+  td.n{font-variant-numeric:tabular-nums}
+  .next-detail summary{cursor:pointer}
+  .detail-hint{display:block;color:var(--accent);font-size:11.5px;margin-top:4px}
+  .next-list{margin:8px 0;padding-left:18px}.next-list li{margin:5px 0}
+  .checks{border-top:1px solid var(--rule);padding-top:16px;margin-bottom:18px}
+  .checks > details > summary{cursor:pointer;color:var(--muted);font-size:12px}
+  .check-body{margin-top:12px}
+  .ok-bar{color:var(--go)}
+  code{font:11.5px/1.6 Consolas,"Cascadia Mono",monospace;background:#eaf0f2;border-radius:3px;padding:1px 4px;overflow-wrap:anywhere}
+  footer{font-size:12px;color:var(--muted);padding-top:16px;border-top:1px solid var(--rule)}
+  .footer-links{display:flex;flex-wrap:wrap;gap:8px 20px}
+  .technical{margin-top:13px;overflow-wrap:anywhere}
+  .technical summary{cursor:pointer;width:fit-content}
+  .technical p{margin:8px 0;max-width:75ch}
+  @media(min-width:1600px){.workspace-layout{grid-template-columns:minmax(0,1fr) 350px;gap:32px}.workspace{padding:32px 40px}}
+  @media(max-width:1180px){
+    .app-shell{grid-template-columns:180px minmax(0,1fr)}
+    .workspace{padding:24px}.workspace-layout{grid-template-columns:minmax(0,1fr)}
+    .activity{padding-left:0;border-left:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+    .function-entry{padding:16px 18px}
+  }
+  @media(max-width:760px){
+    .app-shell{display:block}.sidebar{position:static;height:auto;padding:18px 18px 14px}
+    .brand{padding:0;font-size:21px}.brand-note,.nav-label,.nav-functions,.rail-foot{display:none!important}
+    .sidebar .nav-primary{display:flex;flex-wrap:wrap;gap:4px;margin-top:14px}
+    .sidebar nav a{padding:6px 9px;font-size:12px}
+    .workspace{padding:22px 16px}.mast-top{display:block}.date{margin-top:6px;font-size:12px}
+    h1{font-size:24px}.chips{gap:7px 14px}.mast{margin-bottom:22px}
+    .activity{display:block}.workspace-layout{gap:0}
+    .section-heading{display:block}.section-heading .section-hint{text-align:left;margin:-4px 0 12px}
+    .function-entry{grid-template-columns:minmax(0,1fr);gap:10px;padding:16px}
+    .group-members,.group-guide{justify-self:start}.group-members[open]{width:100%}
+    .group-desc{max-width:60ch}.group-title{font-size:16px}
+    .task-stack{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  }
+  @media(max-width:540px){
+    .workspace{padding:20px 14px}.task-stack{grid-template-columns:minmax(0,1fr)}
+    table{min-width:560px}th,td{padding:9px 11px}
+    section:has(.table-scroll) > .table-hint,.group-members > .table-hint{display:block;color:var(--muted);font-size:11.5px;margin:0 0 8px}
+    .meta a{display:inline-block;margin-left:8px}.chip{font-size:11.5px}
+    h2{font-size:15px}.card{padding:13px 14px}
   }
 </style>
 </head>
 <body>
 <a class="skip-link" href="#main-content">跳到主要内容</a>
-
-<header class="mast">
-  <div class="wrap">
-    <div class="mast-top">
-      <h1>夜跑看板</h1>
-      <div class="date">{{dateHuman}}</div>
-    </div>
-    <p class="lead">基础功能与业务项目分开管理，任务与进展一处查看。</p>
-    <div class="meta">快照生成于 {{generatedAt}}</div>
-    {{statusBar}}
-    <nav class="section-nav" aria-label="看板分区">
-      <a href="#actions">审批与执行</a><a href="#queues">搁置与未排入</a><a href="#functions">功能组</a><a href="#projects">项目组</a>
-      <a href="#progress">当日推进</a><a href="#history">夜跑历史</a><a href="#needs-fix">需要补齐</a>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="工作区导航">
+    <a class="brand" href="#main-content">WorkSpace</a>
+    <p class="brand-note">个人工作区</p>
+    <nav class="nav-primary" aria-label="主要分区">
+      <a href="#main-content" aria-current="page">工作台</a>
+      <a href="#functions">功能组</a>
+      <a href="#projects">项目组</a>
+      <a href="#actions">任务处理</a>
+      <a href="#history">运行记录</a>
     </nav>
-  </div>
-</header>
-
-<main class="wrap" id="main-content">
-  <div class="snapshot-note">这是生成时的离线快照，页面不会自动更新。数据变化后请<a href="#refresh-help">重新生成看板</a>。</div>
-
-  <section id="actions">
-    <h2>审批与执行</h2>
-    <p class="section-hint">展开任务查看说明与来源；审批请在审批窗口完成。</p>
-    <div class="grid">
-      <div class="card rail-wait">
-        <div class="card-h"><b>等你点头</b></div>
-        {{pending}}
+    <p class="nav-label">功能入口</p>
+    <nav class="nav-functions" aria-label="功能入口">{{functionNav}}</nav>
+    <div class="rail-foot"><p>离线快照</p><a href="#refresh-help">查看刷新方式</a></div>
+  </aside>
+  <main class="workspace" id="main-content">
+    <header class="mast">
+      <div class="mast-top"><h1>工作区总览</h1><div class="date">{{dateHuman}}</div></div>
+      <div class="meta">快照生成于 {{generatedAt}}，内容不会自动更新。<a href="#refresh-help">刷新说明</a></div>
+      {{statusBar}}
+    </header>
+    <div class="workspace-layout">
+      <div class="primary">
+        <section id="functions">
+          <div class="section-heading"><h2>功能组</h2><p class="section-hint">技能、工具、工作流与公共组件</p></div>
+          {{functions}}
+        </section>
+        <section id="projects">
+          <h2>项目组 <span class="n">具体业务</span></h2>
+          <p class="table-hint">左右滑动表格查看全部列。</p>
+          {{projects}}
+        </section>
+        <section id="progress">
+          <h2>当日推进</h2>
+          <p class="table-hint">左右滑动表格查看全部列。</p>
+          {{day}}
+        </section>
       </div>
-      <div class="card rail-go">
-        <div class="card-h"><b>可执行队列</b></div>
-        {{tonight}}
-      </div>
+      <aside class="activity" aria-label="任务处理">
+        <section id="actions">
+          <h2>任务处理</h2>
+          <p class="section-hint">展开查看详情，审批在审批窗口完成。</p>
+          <div class="task-stack">
+            <div class="card rail-wait"><div class="card-h"><b>等你点头</b></div>{{pending}}</div>
+            <div class="card rail-go"><div class="card-h"><b>可执行队列</b></div>{{tonight}}</div>
+          </div>
+        </section>
+        <section id="queues"><h2>搁置与未排入</h2>{{queues}}</section>
+      </aside>
     </div>
-  </section>
-
-  <section id="queues">
-    <h2>搁置与未排入</h2>
-    {{queues}}
-  </section>
-
-  <section id="functions">
-    <h2>功能组</h2>
-    <p class="section-hint">技能、工具、工作流与公共组件，为业务项目提供基础能力。</p>
-    {{functions}}
-  </section>
-
-  <section id="projects">
-    <h2>项目组 <span class="n">具体业务</span></h2>
-    <p class="table-hint">左右滑动表格查看全部列。</p>
-    {{projects}}
-  </section>
-
-  <section id="progress">
-    <h2>当日推进 <span class="n">{{dateHuman}}</span></h2>
-    <p class="table-hint">左右滑动表格查看全部列。</p>
-    {{day}}
-  </section>
-
-  <section id="history">
-    <h2>夜跑历史 <span class="n">最近 7 次</span></h2>
-    <p class="table-hint">左右滑动表格查看报告入口。</p>
-    {{history}}
-  </section>
-
-  <section id="needs-fix">
-    <h2>需要补齐</h2>
-    {{needsFix}}
-  </section>
-
-  <footer>
-    {{links}}
-    <details class="technical" id="refresh-help" open>
-      <summary>刷新方式与数据来源</summary>
-      <p>在工作区运行 <code>node ws.mjs board</code>，然后重新打开或刷新本页。</p>
-      <p>数据源：<code>node ws.mjs status --json</code>。清单格式见 <code>CONVENTIONS.md</code> 第 5 节。</p>
-    </details>
-  </footer>
-</main>
+    <section id="history"><h2>夜跑记录 <span class="n">最近 7 次</span></h2><p class="table-hint">左右滑动表格查看报告入口。</p>{{history}}</section>
+    <section id="needs-fix" class="checks"><details><summary>规范检查</summary><div class="check-body">{{needsFix}}</div></details></section>
+    <footer>
+      <div class="footer-links">{{links}}</div>
+      <details class="technical" id="refresh-help"><summary>刷新方式与数据来源</summary>
+        <p>在工作区运行 <code>node ws.mjs board</code>，然后重新打开或刷新本页。</p>
+        <p>数据源：<code>node ws.mjs status --json</code>。清单格式见 <code>CONVENTIONS.md</code> 第 5 节。</p>
+      </details>
+    </footer>
+  </main>
+</div>
 </body>
 </html>
