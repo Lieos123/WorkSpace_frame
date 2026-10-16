@@ -29,6 +29,8 @@
 
 看板随时可看：`_night\board\index.html`（`node ws.mjs board --open`，夜跑/早检收尾会自动刷新）。
 
+**双击入口**：工作区根目录 `打开工作台.cmd`。每次都会先生成最新面板，再用默认浏览器打开；需要已安装 Node.js 并加入 PATH。成功后命令窗口自动关闭，失败时保留错误信息供查看。
+
 不依赖 ZCode 桌面端是否开着——用的是 `D:\Zcode\resources\glm\zcode.cjs` 这个无头 CLI（已实测：桌面端同时开着也能跑）。
 
 ## 目录

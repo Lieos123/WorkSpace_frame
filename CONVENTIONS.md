@@ -39,6 +39,7 @@ D:\WorkSpace\      根仓库：只跟踪框架（白名单 .gitignore），项�
 ├─ CONVENTIONS.md   本文：项目统一规范
 ├─ TREE.md          项目树（自动生成，勿手改；生成物，不进版本控制）
 ├─ ws.mjs           工作区工具
+├─ 打开工作台.cmd    双击生成最新面板并用默认浏览器打开
 ├─ Tools\           工具库（不是项目，不建自己的 git、不进 TREE 统计）
 ├─ Skills\          技能库（本身就是一个符合规范的项目，可当样板）
 ├─ WorkFlows\       工作流容器：一个具体工作流一个子文件夹，各自是独立项目
@@ -51,7 +52,7 @@ D:\WorkSpace\      根仓库：只跟踪框架（白名单 .gitignore），项�
 
 根目录**是**一个 git 仓库，但它是**框架仓库**——只跟踪"框架自己"，不跟踪任何项目。
 
-- **跟踪**：根规则文件（`AGENTS.md` / `CONVENTIONS.md` / `ARCHITECTURE.md` / `CLAUDE.md` / `NIGHT.md`）、`ws.mjs`、`_template\`、`_night\`（代码 / 配置 / 提示词 / `tasks\*.xml` / 手写的 `brief\notes-*.md`）、容器与库的说明文件（`WorkFlows\README.md` 与 `AGENTS.md`、`_archive\README.md`、`Tools\README.md` 与 `_setup\`）。
+- **跟踪**：根规则文件（`AGENTS.md` / `CONVENTIONS.md` / `ARCHITECTURE.md` / `CLAUDE.md` / `NIGHT.md`）、`ws.mjs`、`打开工作台.cmd`、`_template\`、`_night\`（代码 / 配置 / 提示词 / `tasks\*.xml` / 手写的 `brief\notes-*.md`）、容器与库的说明文件（`WorkFlows\README.md` 与 `AGENTS.md`、`_archive\README.md`、`Tools\README.md` 与 `_setup\`）。
 - **不跟踪**：所有项目（含容器下的、`Skills\`、`_archive\` 里的休眠项目）、`Tools\` 工具本体、生成物（`TREE.md`、`_night\runs\`、`_night\board\data.json|index.html`、`_night\brief\` 的日期件）、只在本机有意义的 `_night\node-path.txt`。
 - **靠白名单保证不误伤**：根 `.gitignore` 第一条是 `/*`（全部忽略），再把上面"跟踪"清单逐个 `!` 放开。所以**新建的项目目录默认就被忽略**——`git add -A` 碰不到子仓库，永远不会变成 gitlink / submodule。
 - **换行符按原样**：根 `.gitattributes` 写 `* -text`，不做 CRLF ↔ LF 自动转换（否则一次 checkout / 回滚就会把 LF 文件整篇改成 CRLF，diff 变成噪声）。
