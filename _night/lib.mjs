@@ -127,7 +127,7 @@ export function shortDate(isoOrHm, refDate) {
     if (d === addDays(refDate, -1)) return `昨天${suffix}`;
     if (d.slice(0, 4) === refDate.slice(0, 4)) return `${d.slice(5)}${suffix}`;
   }
-  return `${d.slice(5)}${suffix}`;
+  return `${d}${suffix}`;
 }
 
 /** 把 NIGHT.md 路径简化成直观的层级/项目短名 */
@@ -138,8 +138,8 @@ export function shortSource(file) {
 }
 
 /**
- * 清单条目渲染成**一行**：状态胶囊 + 项目标签 + 标题（含精简说明）。
- * 完整说明与文件行号进 title 提示，版面干净不堆路径。
+ * 清单默认只显示状态、来源和标题；原生 details 提供鼠标、触屏与键盘的全文入口。
+ * 不支持 details 的简报内核直接显示正文，不依赖客户端脚本。
  */
 export function itemRow(it) {
   const parts = String(it.text).split('|').map((s) => s.trim()).filter(Boolean);
@@ -149,11 +149,15 @@ export function itemRow(it) {
   const fullTip = [note, meta, `${it.file}:${it.line}`].filter(Boolean).join(' ｜ ');
   const srcName = shortSource(it.file);
   return (
-    `<li title="${esc(fullTip)}"><span class="dot ${STATE_CLASS[it.state] ?? ''}"></span>` +
+    `<li class="task-item"><details class="task-detail"><summary title="${esc(fullTip)}">` +
+    `<span class="dot ${STATE_CLASS[it.state] ?? ''}"></span>` +
     `<span class="st">${esc(it.state)}</span>` +
     `<span class="tag">${esc(srcName)}</span>` +
     `<span class="ti">${fmtInline(title)}</span>` +
-    `<span class="src">${esc(meta || srcName)}</span></li>`
+    `<span class="src">${esc(meta)}</span></summary>` +
+    `<div class="task-note">${fmtInline(note || '未填写说明')}` +
+    `<div class="task-origin">${esc(meta)}${meta ? ' · ' : ''}${esc(`${it.file}:${it.line}`)}</div>` +
+    `</div></details></li>`
   );
 }
 

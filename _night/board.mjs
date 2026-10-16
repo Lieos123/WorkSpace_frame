@@ -38,11 +38,11 @@ function buildSlots(status) {
     history: history(status, 7),
     needsFix: needsFix(status),
     links:
-      `<span>前日简报：<a href="${esc(fileUrl('_night/brief/latest.html'))}">latest.html</a></span>` +
-      `<span>项目树：<a href="${esc(fileUrl('TREE.md'))}">TREE.md</a></span>` +
-      `<span>工作区清单：<a href="${esc(fileUrl('NIGHT.md'))}">NIGHT.md</a></span>` +
-      `<span>夜跑报告：<a href="${esc(fileUrl('_night/runs'))}">_night\\runs\\</a></span>` +
-      `<span>机制说明：<a href="${esc(fileUrl('_night/README.md'))}">_night\\README.md</a></span>`,
+      `<a href="${esc(fileUrl('_night/brief/latest.html'))}">前日简报</a>` +
+      `<a href="${esc(fileUrl('TREE.md'))}">项目树</a>` +
+      `<a href="${esc(fileUrl('NIGHT.md'))}">工作区清单</a>` +
+      `<a href="${esc(fileUrl('_night/runs'))}">夜跑报告</a>` +
+      `<a href="${esc(fileUrl('_night/README.md'))}">机制说明</a>`,
   };
 }
 

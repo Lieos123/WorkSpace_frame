@@ -13,11 +13,12 @@
     linksBlock  快捷入口
 
   这个文件会被 WinForms 的 IE 内核渲染，所以**只用保守 CSS**（无 CSS 变量、无 flex/grid）。
-  排版原则同看板：一行一条、长文截断，别让人在窗口里读长文。
+  排版原则同看板：摘要优先；旧内核不支持 details 时，说明正文直接显示，内容不能丢失。
 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>前日总结 · WorkSpace</title>
 <style>
@@ -45,6 +46,7 @@
         padding:2px 10px;font-size:12px;margin:0 6px 6px 0;color:#374151}
   .chip .d{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9aa2ad;margin-right:5px}
   .chip.go .d{background:#1a7f37} .chip.half .d{background:#b42318} .chip.done .d{background:#3b6fb6}
+  .chip.wait .d{background:#8c5a06} .chip.hold .d{background:#6638a6}
   ul.items{list-style:none;margin:6px 0 0;padding:0}
   ul.items li{display:block;padding:4px 0;border-top:1px solid #f1f3f5}
   ul.items li:first-child{border-top:0}
@@ -54,6 +56,28 @@
   ul.items .st{color:#6b7280;font-size:12px;margin-right:6px}
   ul.items .ti{font-weight:600}
   ul.items .src{color:#9aa2ad;font-size:11.5px;margin-left:8px}
+  .card-summary{margin:6px 0;color:#4b5563;font-size:12px}
+  .card-summary strong{font-size:22px;color:#1f2328}
+  .card-help{display:block;color:#6b7280;font-size:12px;margin:2px 0 6px}
+  .empty-hint,.quiet-bar{padding:9px 11px;background:#f5f7fa;border:1px solid #e6e8ec;border-radius:5px;color:#4b5563}
+  .ok-bar{color:#17784f;background:#f0f8f3;border-color:#cfe5d7}
+  .tag{display:inline-block;font-size:11.5px;color:#4b5563;background:#edf1f7;padding:0 5px;margin-right:6px;border-radius:3px}
+  .b{display:inline-block;font-size:11px;padding:1px 6px;margin:0 3px 3px 0;border-radius:3px;white-space:nowrap}
+  .b-go{color:#17784f;background:#e4f3ea} .b-wait{color:#8c5a06;background:#fbf0d6}
+  .b-half{color:#b3261e;background:#fbe6e4} .b-hold{color:#6638a6;background:#eee7f8}
+  .b-done{color:#2c5d9c;background:#e5edf8} .b-muted{color:#4b5667;background:#eef1f5}
+  .proj-head b{margin-right:5px} .proj-desc{margin-top:3px;font-size:12px;color:#6b7280}
+  .upd-time{margin-bottom:3px}
+  details,summary{display:block}
+  summary{cursor:pointer;color:#374151}
+  summary:focus,a:focus,.table-scroll:focus{outline:2px solid #2453b8;outline-offset:2px}
+  ul.items .task-detail .src,ul.items .task-detail .dot{display:none}
+  .task-detail summary{padding:4px 0}
+  .task-detail > summary,.next-detail > summary{display:list-item;list-style-position:inside}
+  .task-note{padding:7px 9px;margin:4px 0;background:#f5f7fa;color:#4b5563;font-size:12px;word-wrap:break-word}
+  .task-origin{margin-top:5px;font-size:11px;color:#6b7280;word-wrap:break-word}
+  .detail-hint{display:block;font-size:11.5px;color:#2453b8;margin-top:3px}
+  .next-list{margin:6px 0;padding-left:18px} .next-list li{margin:3px 0}
   table{width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #e6e8ec;border-radius:8px}
   th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #eef0f3;font-size:12.5px;
         vertical-align:top;overflow-wrap:break-word}
@@ -69,7 +93,7 @@
 <body>
 
 <h1>前日总结 · {{dateHuman}}</h1>
-<div class="meta">由 <code>_night\brief.mjs</code> 生成（{{generatedAt}}）· 数据来自 <code>node ws.mjs status --json</code> 与 <code>_night\runs\</code></div>
+<div class="meta">快照生成于 {{generatedAt}}，内容不会自动更新。审批请切换窗口的「待审」页签。</div>
 
 <div class="headline">{{headline}}</div>
 

@@ -137,7 +137,7 @@ function actionsSection(status) {
   return (
     '<table class="plain"><colgroup><col style="width:50%"><col style="width:50%"></colgroup><tbody><tr>' +
     `<td class="plaincell"><div class="card"><div class="card-h"><b>等你点头</b><span class="muted small">[待审]</span></div>${pendingCard(status)}</div></td>` +
-    `<td class="plaincell"><div class="card"><div class="card-h"><b>今晚要跑</b><span class="muted small">[待跑]</span></div>${tonightCard(status)}</div></td>` +
+    `<td class="plaincell"><div class="card"><div class="card-h"><b>可执行队列</b><span class="muted small">未完成 / 待跑</span></div>${tonightCard(status)}</div></td>` +
     '</tr></tbody></table>'
   );
 }
@@ -150,7 +150,7 @@ function actionsSection(status) {
 function boardSection(status, date) {
   return [
     chipsBar(status),
-    `<div class="sub">两级清单</div>`,
+    `<div class="sub">搁置与未排入</div>`,
     queues(status),
     `<div class="sub">项目一览</div>`,
     projects(status),
