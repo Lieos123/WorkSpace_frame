@@ -148,7 +148,9 @@
   @media(max-width:1180px){
     .app-shell{grid-template-columns:180px minmax(0,1fr)}
     .workspace{padding:24px}.workspace-layout{grid-template-columns:minmax(0,1fr)}
-    .activity{padding-left:0;border-left:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+    .activity{padding-left:0;border-left:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);grid-template-rows:auto auto;column-gap:20px}
+    .activity > section{display:grid;grid-template-rows:subgrid;grid-row:span 2;row-gap:0}
+    .activity > section > :last-child{align-self:start}
     .function-entry{padding:16px 18px}
   }
   @media(max-width:760px){
@@ -158,7 +160,7 @@
     .sidebar nav a{padding:6px 9px;font-size:12px}
     .workspace{padding:22px 16px}.mast-top{display:block}.date{margin-top:6px;font-size:12px}
     h1{font-size:24px}.chips{gap:7px 14px}.mast{margin-bottom:22px}
-    .activity{display:block}.workspace-layout{gap:0}
+    .activity,.activity > section{display:block}.workspace-layout{gap:0}
     .section-heading{display:block}.section-heading .section-hint{text-align:left;margin:-4px 0 12px}
     .function-entry{grid-template-columns:minmax(0,1fr);gap:10px;padding:16px}
     .group-members,.group-guide{justify-self:start}.group-members[open]{width:100%}
@@ -216,14 +218,16 @@
       </div>
       <aside class="activity" aria-label="任务处理">
         <section id="actions">
-          <h2>任务处理</h2>
-          <p class="section-hint">展开查看详情，审批在审批窗口完成。</p>
+          <div class="activity-heading">
+            <h2>任务处理</h2>
+            <p class="section-hint">展开查看详情，审批在审批窗口完成。</p>
+          </div>
           <div class="task-stack">
             <div class="card rail-wait"><div class="card-h"><b>等你点头</b></div>{{pending}}</div>
             <div class="card rail-go"><div class="card-h"><b>可执行队列</b></div>{{tonight}}</div>
           </div>
         </section>
-        <section id="queues"><h2>搁置与未排入</h2>{{queues}}</section>
+        <section id="queues"><div class="activity-heading"><h2>搁置与未排入</h2></div>{{queues}}</section>
       </aside>
     </div>
     <section id="history"><h2>夜跑记录 <span class="n">最近 7 次</span></h2><p class="table-hint">左右滑动表格查看报告入口。</p>{{history}}</section>
