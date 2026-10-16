@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { HERE, ROOT, esc, fileUrl, humanDate, openWithSystem, readStatus, render, ymd } from './lib.mjs';
-import { chipsBar, history, needsFix, pendingCard, projects, progress, queues, tonightCard } from './sections.mjs';
+import { chipsBar, functionalGroups, history, needsFix, pendingCard, projects, progress, queues, tonightCard } from './sections.mjs';
 
 const OUT_DIR = path.join(HERE, 'board');
 const TEMPLATE = path.join(OUT_DIR, 'template.html');
@@ -33,6 +33,7 @@ function buildSlots(status) {
     pending: pendingCard(status),
     tonight: tonightCard(status),
     queues: queues(status),
+    functions: functionalGroups(status),
     projects: projects(status),
     day: progress(status),
     history: history(status, 7),

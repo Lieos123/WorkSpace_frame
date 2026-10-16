@@ -58,6 +58,13 @@ D:\WorkSpace\      根仓库：只跟踪框架（白名单 .gitignore），项�
 - **提交口径**：改的是框架文件 → 在根仓库提交；改的是项目内容 → 在项目自己的仓库提交。两者互不牵连（照第 8 节的收尾动作走）。
 - **远程**：`https://github.com/Lieos123/WorkSpace_frame.git`（**公开**，2026-10-15 建立，分支 `master`）。推送是**手动**动作（`git push`）：夜跑 / 早检不推（提示词里的 `git push` 硬禁令不变）。凭据走本机 Git Credential Manager（账号 `Lieos123`），首次推送后已无需再登录。注意公开仓库里能看到提交作者邮箱与本机路径——转私有：GitHub 仓库 Settings → General → Change visibility。
 
+### 面板按用途分组：功能组与项目组
+
+- **功能组**：`Skills\`（共享技能）、`Tools\`（共享工具）、`WorkFlows\`（工作流，含其下全部具体流程）；`审批窗口\` 这类共用能力归「公共组件」。这些能力不计入面板的业务项目数。
+- **项目组**：承接具体业务的项目；除上述功能范围外，已接入的项目默认归入业务项目组。没有业务项目就展示空状态，不把功能库或工作流填进去凑数。
+- **用途与仓库维护是两回事**：分组不搬目录、不改变 git 边界；Skills、具体工作流、审批窗口仍按原有独立仓库维护，Tools 本体仍是库。本文后续的「独立项目」「项目仓库」指维护单元，不等于面板里的业务项目组。
+- **唯一分类口径**：`node ws.mjs status --json` 提供 `functionalGroups[]`、各仓库条目的 `group` 和业务统计；看板与简报只消费该结果。为兼容已有调用，原 `projects[]` 与 `counts.projects/active` 仍表示完整仓库维护单元；业务面板使用新增的 `counts.businessProjects/activeBusinessProjects`。
+
 ### 容器：`WorkFlows\`（装工作流）
 
 容器是**只用来按类归拢项目**的目录：本身不是项目（不建 git、不记 LOG、不进 TREE 的"项目"统计），其下每个子文件夹按第 2 节建成独立项目。

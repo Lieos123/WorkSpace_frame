@@ -41,7 +41,7 @@ import {
   runsInfo,
   ymd,
 } from './lib.mjs';
-import { chipsBar, history, needsFix, pendingCard, projects, queues, tonightCard } from './sections.mjs';
+import { chipsBar, functionalGroups, history, needsFix, pendingCard, projects, queues, tonightCard } from './sections.mjs';
 
 const OUT_DIR = path.join(HERE, 'brief');
 const TEMPLATE = path.join(OUT_DIR, 'template.html');
@@ -56,7 +56,7 @@ function headlineLines(f) {
   const out = [];
   const commits = sumCommits(f);
   const touched = f.day.filter((p) => (p.day?.commits?.length ?? 0) > 0 || p.day?.log).map((p) => p.rel);
-  out.push(commits ? `昨天 ${touched.length} 个项目有动作，共 ${commits} 次提交。` : '昨天各项目没有提交记录。');
+  out.push(commits ? `昨天 ${touched.length} 个条目有更新，共 ${commits} 次提交。` : '昨天各条目没有提交记录。');
 
   if (f.night?.summary) {
     const s = f.night.summary;
@@ -93,8 +93,8 @@ function daySection(f) {
   }
   return rows.length
     ? `<table><colgroup><col style="width:26%"><col style="width:14%"><col style="width:60%"></colgroup>` +
-        `<thead><tr><th>项目</th><th>提交</th><th>摘要</th></tr></thead><tbody>${rows.join('')}</tbody></table>`
-    : `<div class="muted">${esc(f.date)} 各项目没有提交、未提交改动或日志条目。</div>`;
+        `<thead><tr><th>条目</th><th>提交</th><th>摘要</th></tr></thead><tbody>${rows.join('')}</tbody></table>`
+    : `<div class="muted">${esc(f.date)} 各条目没有提交、未提交改动或日志条目。</div>`;
 }
 
 function nightSection(f) {
@@ -152,7 +152,9 @@ function boardSection(status, date) {
     chipsBar(status),
     `<div class="sub">搁置与未排入</div>`,
     queues(status),
-    `<div class="sub">项目一览</div>`,
+    `<div class="sub">功能组</div>`,
+    functionalGroups(status),
+    `<div class="sub">项目组 · 具体业务</div>`,
     projects(status),
     `<div class="sub">夜跑历史</div>`,
     history(status, 7),

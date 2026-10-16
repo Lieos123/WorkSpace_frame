@@ -1,5 +1,5 @@
 ---
-arch-version: 7
+arch-version: 8
 updated: 2026-10-16
 ---
 
@@ -216,6 +216,7 @@ L0  边界判据        「能不能 git init 并且只提交你自己写的东�
 ### M14 视图层：状态快照 · 看板 · 前日简报 · 弹窗（v2 新增）
 - **作用**：把"状态"从文件里读出来、渲染成人一眼能看的东西，并让用户在一个窗口里完成早上的"看总结 + 点头"。分三层，模型只在最薄的一层（可选）出现：
   - **取数**：`node ws.mjs status --json`（唯一解析 markdown 的口径）→ 契约 `workspace-status/1`；
+  - **用途分组**：状态快照统一提供 `functionalGroups[]` 与各条目的 `group`。Skills、Tools、WorkFlows（含具体流程）及公共组件归功能组，具体业务归项目组；面板业务数量读取新增的业务统计，不把功能条目混入。原仓库列表与统计保留以兼容夜跑、进展等既有消费者，git 边界不变。
   - **渲染**：`_night\lib.mjs`（共用取数/转义/模板小库）+ `_night\sections.mjs`（分区渲染：状态条/两级清单/项目一览/推进/夜跑历史/需补齐）+ `_night\board.mjs`（看板整页）+ `_night\brief.mjs`（前日总结页，**内嵌 sections 的同一批分区**——早上一个窗口全看完）；文案与样式在模板文件里，逻辑不碰文案；
   - **交互**：窗口引擎是项目 `审批窗口\`——spec JSON 进、result JSON 出；spec 的 `report` 字段让它多一个 HTML 页签（前日总结走这条），关窗/超时绝不等于同意。
 - **约定**：
@@ -248,7 +249,7 @@ L0  边界判据        「能不能 git init 并且只提交你自己写的东�
 | 技能目录 | `skills\<名称>\SKILL.md`，目录名 == `SKILL.md` 的 `name` | `Skills\README.md` |
 | 生成物 | `TREE.md` 头部标"自动生成，请勿手改" | `ws.mjs` |
 | 根仓库跟踪范围 | `.gitignore` 白名单：`/*` 全部忽略 + 逐条 `!` 放开框架文件（根规则 / `ws.mjs` / `_template\` / `_night\` 代码配置提示词 / 容器与库的说明文件）；`.gitattributes` = `* -text`（按原样存取） | `CONVENTIONS.md` 第 1 节「根仓库」· 根 `.gitignore` |
-| 状态快照 | `node ws.mjs status --json` 输出 `{schema:"workspace-status/1", generatedAt, date, root, counts, workspace.night, projects[], nightSystem{pause,stop,lock,last,history[]}, needsFix[]}`；清单条目带 `file` + `line`（写回用） | `ws.mjs` 的 `snapshot()` |
+| 状态快照 | `node ws.mjs status --json` 输出 `{schema:"workspace-status/1", generatedAt, date, root, counts, functionalGroups[], workspace.night, projects[], nightSystem{pause,stop,lock,last,history[]}, needsFix[]}`；清单条目带 `file` + `line`（写回用）。`projects[].group` 为 `business/skills/tools/workflows/shared`；新增 `counts.businessProjects/activeBusinessProjects/functionalGroups` 表示用途统计，原 `counts.projects/active` 与 `projects[]` 仍是完整仓库维护单元 | `ws.mjs` 的 `snapshot()` |
 | 简报事实快照 | `_night\brief\data-<日期>.json`：`{schema:"daily-brief/1", date, generatedAt, headline[], notes, facts{day, night, doneItems, stuck, pending, morning, dirty}}` | `_night\brief.mjs` |
 | 窗口 spec | JSON：`title / message / topMost / countdownFormat / buttons{} / items[{id,title,tag,detail,checked}] / report{title,file,itemsTitle?,openPath?,openLabel?}`；带 `report` 时 `items` 可为空（纯展示） | `审批窗口\approve.mjs`（校验）/ `approve.ps1`（渲染） |
 | 窗口 result | `{action: ok\|rejectAll\|later\|timeout, decisions:{id: approve\|reject\|later}, at}`；写入 `--out`；关窗/超时＝全部 later | `审批窗口\approve.ps1` |
@@ -371,6 +372,7 @@ L0  边界判据        「能不能 git init 并且只提交你自己写的东�
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 8 | 2026-10-16 | **功能组与业务项目组**：按用户明确口径，Skills、Tools、WorkFlows（含具体流程）及公共审批组件归基础功能，项目组仅放具体业务；分类集中在 `ws.mjs status --json`，新增用途字段与统计、兼容旧仓库数组，Tools 仍不作项目扫描。看板与简报同步分组、功能详情保留状态与下一步；CONVENTIONS、WorkFlows 说明与新项目模板同步。没有业务项目时显示空状态，不改变目录、git 边界、审批或夜跑执行范围。 |
 | 7 | 2026-10-16 | **看板展示优化**：M14 补齐可执行队列与积压语义、控制标志独立展示和非规范状态提示；浏览器看板增加分区导航、快照说明、完整详情与窄屏局部表格滚动，简报同步共用片段并保留旧内核 CSS。零新增依赖、无客户端 JS，不改执行器和审批数据。12 项展示回归、两个生成自检、真实数据生成和报告窗口空审批启动自检通过；浏览器实查 1280/390/320 像素布局、鼠标/键盘详情及表格滚动。IE 旧内核视觉排版未逐项验收，启动自检不替代该检查。 |
 | 1 | 2026-10-14 | 首版：从 `D:\WorkSpace` 现状整理出八层结构、13 个模块、机器可读契约汇总、复现参数表与升级协议。 |
 | 2 | 2026-10-15 | 视图层与早间闭环：新增 **M14**（状态快照 `ws.mjs status --json` / 看板 `_night\board.mjs` / 前日简报 `_night\brief.mjs` / 弹窗复用 `审批窗口\` 的 `report` 页签）；`ws.mjs` 增 `review` / `status` / `board`（更新 M05）；M12 补 09:00 简报窗口、凌晨多补跑时机 + `nightKey()` 去重、无头 CLI 的 `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` 环境变量、`launch-hidden.vbs`；参数区与契约表同步补行；验收清单补 status/board/brief/弹窗项。全部为"确定性生成、离线、零依赖"，唯一可选的模型介入点缩到 3–5 句人话摘要（`prompts\brief-notes.md`），为接内网慢/弱模型准备。当日第二版：看板与前日简报按"一屏看完"重排（一行一条、长文截断、空层级合并），弹窗按钮/配色重做，**取消自动关闭**（看完自己关；计划任务脱手起窗口）。 |

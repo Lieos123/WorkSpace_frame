@@ -41,6 +41,15 @@ const SKIP_DIRS = new Set(['node_modules', '_template', 'Tools', '_night']);
 const MAX_DEPTH = 4;
 const TREE_FILE = path.join(ROOT, 'TREE.md');
 
+// 用途分组与仓库边界分开：Tools 是库，Skills/工作流/公共组件仍保留各自仓库生命周期。
+const FUNCTIONAL_GROUPS = [
+  { id: 'skills', name: 'Skills', rel: 'Skills', desc: '共享 Agent 技能与分发' },
+  { id: 'tools', name: 'Tools', rel: 'Tools', desc: '共享开发工具、代码图谱与索引工具' },
+  { id: 'workflows', name: 'WorkFlows', rel: 'WorkFlows', desc: '可复用工作流与自动化流程' },
+  { id: 'shared', name: '公共组件', rel: '审批窗口', desc: '审批窗口等工作区共用能力' },
+];
+const projectGroup = (rel) => FUNCTIONAL_GROUPS.find((g) => rel === g.rel || rel.startsWith(`${g.rel}/`))?.id ?? 'business';
+
 /* ------------------------------ 小工具 ------------------------------ */
 
 function git(dir, args) {
@@ -793,6 +802,10 @@ function snapshot(args) {
   const projects = [];
   draw(nodes, '', [], projects);
   const fixes = needsFix(projects, strays);
+  const functionalGroups = FUNCTIONAL_GROUPS
+    .filter((g) => fs.existsSync(path.join(ROOT, g.rel)))
+    .map((g) => ({ ...g, desc: readMeta(path.join(ROOT, g.rel))?.desc || g.desc }));
+  const business = projects.filter((p) => projectGroup(p.rel) === 'business');
 
   return {
     schema: 'workspace-status/1',
@@ -803,7 +816,11 @@ function snapshot(args) {
       projects: projects.length,
       active: projects.filter((p) => p.meta.status === '活跃').length,
       needsFix: fixes.length,
+      businessProjects: business.length,
+      activeBusinessProjects: business.filter((p) => p.meta.status === '活跃').length,
+      functionalGroups: functionalGroups.length,
     },
+    functionalGroups,
     workspace: { night: nightBlock(ROOT, 'NIGHT.md') },
     projects: [...projects]
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
@@ -811,6 +828,7 @@ function snapshot(args) {
         const entry = {
           name: p.name,
           rel: p.rel,
+          group: projectGroup(p.rel),
           dir: p.dir,
           status: p.meta.status ?? null,
           desc: p.meta.desc ?? null,

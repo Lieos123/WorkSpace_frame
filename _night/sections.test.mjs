@@ -120,5 +120,46 @@ test('空工作区各分区均有可理解的空状态', () => {
   assert.match(sections.pendingCard(empty), /暂无待审/);
   assert.match(sections.tonightCard(empty), /暂无可执行/);
   assert.match(sections.history(empty), /还没有夜跑记录/);
-  assert.match(sections.projects(empty), /还没有项目/);
+  assert.match(sections.projects(empty), /暂无业务项目/);
+});
+
+const groupedStatus = {
+  ...status,
+  functionalGroups: [
+    { id: 'skills', name: 'Skills', rel: 'Skills', desc: '共享技能库' },
+    { id: 'tools', name: 'Tools', rel: 'Tools', desc: '共享工具库' },
+    { id: 'workflows', name: 'WorkFlows', rel: 'WorkFlows', desc: '通用工作流' },
+    { id: 'shared', name: '公共组件', rel: '审批窗口', desc: '公共审批组件' },
+  ],
+  projects: [
+    { rel: 'Skills', group: 'skills', status: '活跃', next: '同步技能', repo: true, commits: 2 },
+    { rel: 'WorkFlows/周报', group: 'workflows', status: '活跃', next: '生成周报', repo: true, commits: 3 },
+    { rel: '审批窗口', group: 'shared', status: '活跃', next: '验证窗口', repo: true, commits: 1 },
+    { rel: '订单系统', group: 'business', status: '活跃', next: '处理订单', repo: true, commits: 1 },
+  ],
+};
+
+test('项目组只显示业务条目，功能组保留各自状态和下一步', () => {
+  const businessHtml = sections.projects(groupedStatus);
+  assert.match(businessHtml, /订单系统/);
+  assert.doesNotMatch(businessHtml, /Skills|周报|审批窗口/);
+  assert.equal(typeof sections.functionalGroups, 'function');
+  const html = sections.functionalGroups(groupedStatus);
+  assert.match(html, /Skills/);
+  assert.match(html, /Tools/);
+  assert.match(html, /WorkFlows/);
+  assert.match(html, /公共组件/);
+  assert.match(html, /同步技能/);
+  assert.match(html, /生成周报/);
+  assert.doesNotMatch(html, /订单系统|无 git/);
+});
+
+test('顶部业务项目统计不把功能条目混进分母，无业务项目时仍展示功能入口', () => {
+  const html = sections.chipsBar(groupedStatus);
+  assert.match(html, /业务项目 1 个（活跃 1）/);
+  assert.match(html, /功能组 4/);
+  const onlyFunctions = { ...groupedStatus, projects: groupedStatus.projects.slice(0, 3) };
+  assert.match(sections.projects(onlyFunctions), /暂无业务项目/);
+  assert.match(sections.chipsBar(onlyFunctions), /业务项目 0 个（活跃 0）/);
+  assert.match(sections.functionalGroups(onlyFunctions), /WorkFlows/);
 });

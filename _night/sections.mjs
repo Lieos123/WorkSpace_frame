@@ -72,7 +72,9 @@ export function chipsBar(status) {
   if (pending) chips.push(`<span class="chip wait"><span class="d"></span>待审 ${pending} 条</span>`);
   if (todo) chips.push(`<span class="chip go"><span class="d"></span>可执行 ${todo} 条</span>`);
 
-  chips.push(`<span class="chip"><span class="d"></span>活跃项目 ${status.counts.active} / ${status.counts.projects}</span>`);
+  const business = (status.projects ?? []).filter((p) => !p.group || p.group === 'business');
+  chips.push(`<span class="chip"><span class="d"></span>业务项目 ${business.length} 个（活跃 ${business.filter((p) => p.status === '活跃').length}）</span>`);
+  chips.push(`<span class="chip"><span class="d"></span>功能组 ${(status.functionalGroups ?? []).length}</span>`);
   if (status.counts.needsFix) chips.push(`<span class="chip half"><span class="d"></span>需补齐 ${status.counts.needsFix} 处</span>`);
   return `<div class="chips">${chips.join('')}</div>`;
 }
@@ -97,11 +99,11 @@ export function queues(status) {
   const runnable = new Set(runnableItems(status));
   const rest = pickItems(status, ['未完成', '搁置', '待跑']).filter((it) => !runnable.has(it));
   if (!rest.length) {
-    return '<div class="quiet-bar">暂无搁置或非活跃项目的排队任务</div>';
+    return '<div class="quiet-bar">暂无搁置或非活跃条目的排队任务</div>';
   }
   return (
     `<div class="card sub-card"><div class="card-h"><b>暂未进入可执行队列</b>` +
-    `<span class="muted small num">共 ${rest.length} 条 · 搁置或项目非活跃，展开查看详情</span></div>` +
+    `<span class="muted small num">共 ${rest.length} 条 · 搁置或条目非活跃，展开查看详情</span></div>` +
     `<ul class="items">${rest.map(itemRow).join('')}</ul></div>`
   );
 }
@@ -124,10 +126,31 @@ function renderNext(nextText) {
   );
 }
 
-/** 项目一览：三列结构（项目与状态 / 下一步计划 / 最近更新），零值不占版面 */
+/** 业务项目与基础功能用途分开；仓库生命周期仍由同一套表格呈现。 */
 export function projects(status) {
+  const business = (status.projects ?? []).filter((p) => !p.group || p.group === 'business');
+  return business.length ? entryTable(status, business, '业务项目表')
+    : '<div class="empty-hint">暂无业务项目。技能、工具、工作流与公共组件在功能组中查看。</div>';
+}
+
+export function functionalGroups(status) {
+  const groups = status.functionalGroups ?? [];
+  if (!groups.length) return '<div class="empty-hint">暂无功能组。</div>';
+  return '<div class="function-grid">' + groups.map((g) => {
+    const members = (status.projects ?? []).filter((p) => p.group === g.id);
+    return `<div class="card function-card"><div class="card-h"><b><a href="${esc(fileUrl(`${g.rel}/README.md`))}">${esc(g.name)}</a></b>` +
+      `<span class="b b-muted">基础功能</span></div><p class="group-desc">${fmtInline(g.desc)}</p>` +
+      (members.length ? `<details class="group-members"><summary>查看 ${members.length} 个功能条目的状态与下一步</summary>` +
+        '<p class="table-hint">左右滑动表格查看全部列。</p>' +
+        entryTable(status, members, `${g.name}功能条目表`) + '</details>'
+        : '<div class="muted small">工具清单与使用方式请查看本组说明。</div>') + '</div>';
+  }).join('') + '</div>';
+}
+
+/** 共用条目表：三列结构（名称与状态 / 下一步计划 / 最近更新）。 */
+function entryTable(status, entries, label) {
   const ref = status.date;
-  const rows = (status.projects ?? []).map((p) => {
+  const rows = entries.map((p) => {
     const rawStatus = String(p.status ?? '?');
     const badge = ['活跃', '暂停', '已完成', '归档'].includes(rawStatus) ? rawStatus : '待规范';
     const statusCls = badge === '活跃' ? 'b-go' : badge === '已完成' ? 'b-done' : badge === '待规范' ? 'b-wait' : 'b-muted';
@@ -160,12 +183,10 @@ export function projects(status) {
       `</tr>`
     );
   });
-  return rows.length
-    ? '<div class="table-scroll" role="region" aria-label="项目一览表" tabindex="0"><table><colgroup><col style="width:32%"><col style="width:52%"><col style="width:16%"></colgroup>' +
-        '<thead><tr><th>项目</th><th>下一步重点</th><th>最近更新</th></tr></thead><tbody>' +
+  return `<div class="table-scroll" role="region" aria-label="${esc(label)}" tabindex="0"><table><colgroup><col style="width:32%"><col style="width:52%"><col style="width:16%"></colgroup>` +
+        '<thead><tr><th>条目</th><th>下一步重点</th><th>最近更新</th></tr></thead><tbody>' +
         rows.join('') +
-        '</tbody></table></div>'
-    : '<div class="empty-hint">还没有项目。</div>';
+        '</tbody></table></div>';
 }
 
 /** 今日推进：一行一项目，清爽展示提交次数与最新主题 */
@@ -179,7 +200,8 @@ export function progress(status) {
       : (p.day?.log?.split(/\r?\n/)[0]?.replace(/^[-·\s]+/, '') ?? '');
     const name = p.rel.replace(/^WorkFlows\//, '');
     rows.push(
-      `<tr><td><b>${esc(name)}</b></td>` +
+      `<tr><td><b>${esc(name)}</b><div class="muted small">${esc(p.group && p.group !== 'business'
+        ? `功能组 / ${(status.functionalGroups ?? []).find((g) => g.id === p.group)?.name ?? p.group}` : '项目组')}</div></td>` +
         `<td class="n">${commits.length ? `<span class="b b-done">${commits.length} 次提交</span>` : '<span class="muted">—</span>'}` +
         `${p.day?.dirty ? ` <span class="b b-half">未提交 ${p.day.dirty}</span>` : ''}</td>` +
         `<td title="${esc(first)}">${fmtInline(clip(first, 68))}</td></tr>`,
@@ -187,8 +209,8 @@ export function progress(status) {
   }
   return rows.length
     ? '<div class="table-scroll" role="region" aria-label="当日推进表" tabindex="0"><table><colgroup><col style="width:24%"><col style="width:20%"><col style="width:56%"></colgroup>' +
-        '<thead><tr><th>项目</th><th>当日提交</th><th>最新进展</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>'
-    : '<div class="quiet-bar">所选日期各项目暂无提交、日志或未提交改动</div>';
+        '<thead><tr><th>条目与分组</th><th>当日提交</th><th>最新进展</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>'
+    : '<div class="quiet-bar">所选日期各条目暂无提交、日志或未提交改动</div>';
 }
 
 /** 夜跑历史：合并零值列，一眼看清每次夜跑结果 */
@@ -232,7 +254,7 @@ export function history(status, limit = 7) {
 
 export function needsFix(status) {
   const list = status.needsFix ?? [];
-  if (!list.length) return '<div class="quiet-bar ok-bar">✓ 未发现文件或必填字段缺项；项目状态值请见项目一览</div>';
+  if (!list.length) return '<div class="quiet-bar ok-bar">✓ 未发现文件或必填字段缺项；状态值请见功能组与项目组</div>';
   return (
     '<div class="card"><ul class="items">' +
     list

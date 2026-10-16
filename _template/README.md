@@ -22,6 +22,7 @@ next: 写下要做的第一件事
 
 - 工具库：`D:\WorkSpace\Tools`
 - 工作区规则：`D:\WorkSpace\AGENTS.md`
+- 用途分组：具体业务归面板「项目组」；Skills、Tools、WorkFlows（含具体流程）及公共组件归「功能组」，规则见 `D:\WorkSpace\CONVENTIONS.md` 第 1 节。
 
 <!-- frontmatter 三个字段不用手写维护更新时间和提交数，那是 ws.mjs 从 git 自动算的：
      desc   = 一句话说明（会显示在 TREE.md）
